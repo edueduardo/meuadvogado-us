@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// USUÁRIOS (advogados)
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  phone         String?
+  photo         String?
+  bio           String?
+  website       String?
+  plan          Plan      @default(FREE)
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relacionamentos
+  lawyerProfile LawyerProfile?
+  subscription  Subscription?
+  leads         Lead[]
+  reviews       Review[]
+  
+  @@map("users")
+}
+
+// PERFIL DO ADVOGADO
+model LawyerProfile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  oabNumber    String?
+  barAdmission String?
+  languages    String[]  @default(["Portuguese", "English"])
+  address      String?
+  city         String?
+  state        String?
+  zipcode      String?
+  lat          Float?
+  lng          Float?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relacionamentos
+  user              User       @relation(fields: [userId], references: [id])
+  practiceAreas     LawyerPracticeArea[]
+  reviews           Review[]
+  leads             Lead[]
+  
+  @@map("lawyer_profiles")
+}
+
+// ÁREAS DE ATUAÇÃO
+model PracticeArea {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  
+  // Relacionamentos
+  lawyers LawyerPracticeArea[]
+  leads   Lead[]
+  
+  @@map("practice_areas")
+}
+
+// RELAÇÃO ADVOGADO × ÁREA
+model LawyerPracticeArea {
+  lawyerId       String
+  practiceAreaId String
+  
+  lawyer       LawyerProfile  @relation(fields: [lawyerId], references: [id])
+  practiceArea PracticeArea   @relation(fields: [practiceAreaId], references: [id])
+  
+  @@id([lawyerId, practiceAreaId])
+  @@map("lawyer_practice_areas")
+}
+
+// AVALIAÇÕES
+model Review {
+  id            String    @id @default(cuid())
+  lawyerId      String
+  reviewerName  String
+  reviewerEmail String
+  rating        Int       // 1-5
+  comment       String?
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  
+  // Relacionamentos
+  lawyer LawyerProfile @relation(fields: [lawyerId], references: [id])
+  
+  @@map("reviews")
+}
+
+// LEADS (contatos de clientes)
+model Lead {
+  id            String    @id @default(cuid())
+  lawyerId      String?   // null se for geral
+  name          String
+  email         String?
+  phone         String?
+  message       String
+  city          String?
+  practiceAreaId String?
+  status        LeadStatus @default(NEW)
+  source        String?   // "form", "whatsapp", "direct"
+  createdAt     DateTime  @default(now())
+  
+  // Relacionamentos
+  lawyer       LawyerProfile?  @relation(fields: [lawyerId], references: [id])
+  practiceArea PracticeArea?   @relation(fields: [practiceAreaId], references: [id])
+  
+  @@map("leads")
+}
+
+// CASOS (análise "Conte seu Caso")
+model Case {
+  id          String    @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  caseType    String
+  description String
+  aiAnalysis  String?   // resultado da IA
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  
+  @@map("cases")
+}
+
+// CIDADES COM BRASILEIROS
+model City {
+  id                   String    @id @default(cuid())
+  name                 String
+  state                String
+  slug                 String    @unique
+  brazilianPopulation  Int?
+  createdAt            DateTime  @default(now())
+  
+  @@unique([name, state])
+  @@map("cities")
+}
+
+// PLANOS
+enum Plan {
+  FREE
+  PREMIUM    // R$199/mês
+  FEATURED   // R$399/mês
+}
+
+// STATUS LEADS
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  LOST
+}
+
+// ASSINATURAS STRIPE
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  stripeCustomerId  String    @unique
+  stripePriceId     String
+  status            String
+  currentPeriodEnd  DateTime
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id])
+  
+  @@map("subscriptions")
+}
