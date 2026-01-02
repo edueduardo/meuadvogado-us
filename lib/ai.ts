@@ -4,7 +4,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function analyzeLegalCase(caseDescription: string) {
+export async function analyzeLegalCase(caseDescription: string): Promise<string | null> {
   const prompt = `
   Você é um assistente jurídico especializado em imigração brasileira nos EUA.
   
@@ -29,7 +29,13 @@ export async function analyzeLegalCase(caseDescription: string) {
       messages: [{ role: "user", content: prompt }],
     });
     
-    return response.content[0].text;
+    // Type guard para extrair texto do ContentBlock
+    const firstBlock = response.content[0];
+    if (firstBlock.type === 'text') {
+      return firstBlock.text;
+    }
+    
+    return null;
   } catch (error) {
     console.error('AI Analysis Error:', error);
     return null;
