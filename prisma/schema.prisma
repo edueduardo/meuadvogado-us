@@ -86,6 +86,7 @@ model LawyerPracticeArea {
 model Review {
   id            String    @id @default(cuid())
   lawyerId      String
+  userId        String?   // usuário que avaliou (opcional)
   reviewerName  String
   reviewerEmail String
   rating        Int       // 1-5
@@ -95,6 +96,7 @@ model Review {
   
   // Relacionamentos
   lawyer LawyerProfile @relation(fields: [lawyerId], references: [id])
+  user   User?         @relation(fields: [userId], references: [id])
   
   @@map("reviews")
 }
@@ -103,6 +105,7 @@ model Review {
 model Lead {
   id            String    @id @default(cuid())
   lawyerId      String?   // null se for geral
+  userId        String?   // usuário que criou o lead
   name          String
   email         String?
   phone         String?
@@ -115,6 +118,7 @@ model Lead {
   
   // Relacionamentos
   lawyer       LawyerProfile?  @relation(fields: [lawyerId], references: [id])
+  user         User?           @relation(fields: [userId], references: [id])
   practiceArea PracticeArea?   @relation(fields: [practiceAreaId], references: [id])
   
   @@map("leads")
