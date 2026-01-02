@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
                     }}
                   ></div>
                   <span className="text-xs text-gray-600 mt-2 text-center">
-                    {period === 'monthly' ? item.month : period === 'weekly' ? item.week : item.date.split('-')[2]}
+                    {'month' in item ? item.month : 'week' in item ? item.week : 'date' in item ? item.date.split('-')[2] : ''}
                   </span>
                 </div>
               ))}
@@ -291,7 +291,7 @@ export default function AnalyticsPage() {
                     }}
                   ></div>
                   <span className="text-xs text-gray-600 mt-2 text-center">
-                    {period === 'monthly' ? item.month : period === 'weekly' ? item.week : item.date.split('-')[2]}
+                    {'month' in item ? item.month : 'week' in item ? item.week : 'date' in item ? item.date.split('-')[2] : ''}
                   </span>
                 </div>
               ))}
@@ -300,12 +300,12 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Top Cities and Practice Areas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Top Cities */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Cidades</h2>
             <div className="space-y-3">
-              {data.topCities.map((city, index) => (
+              {data.topCities.map((city: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-lg font-medium text-gray-900 w-6">{index + 1}</span>
@@ -330,7 +330,7 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Áreas de Atuação</h2>
             <div className="space-y-3">
-              {data.topPracticeAreas.map((area, index) => (
+              {data.topPracticeAreas.map((area: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-lg font-medium text-gray-900 w-6">{index + 1}</span>
