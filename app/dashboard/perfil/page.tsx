@@ -15,6 +15,7 @@ interface LawyerProfile {
   zipcode?: string;
   bio?: string;
   website?: string;
+  plan: 'FREE' | 'PREMIUM' | 'FEATURED';
   user: {
     name: string;
     email: string;
@@ -87,6 +88,7 @@ export default function PerfilPage() {
         zipcode: '33101',
         bio: 'Advogado especializado em imigração com mais de 10 anos de experiência atendendo a comunidade brasileira.',
         website: 'https://joaosilva-law.com',
+        plan: 'FREE',
         user: {
           name: 'Dr. João Silva',
           email: 'joao@meuadvogado.us',
