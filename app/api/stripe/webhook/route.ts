@@ -44,10 +44,11 @@ export async function POST(req: NextRequest) {
       
       // Atualizar assinatura do usuário
       if (session.customer_email) {
+        const planType = session.metadata?.plan || 'FREE';
         await prisma.user.update({
           where: { email: session.customer_email },
           data: {
-            plan: session.metadata?.plan || 'FREE',
+            plan: planType as any, // Cast para any para evitar erro de tipo
             subscriptionId: session.subscription as string,
           },
         });
@@ -58,9 +59,8 @@ export async function POST(req: NextRequest) {
         await prisma.subscription.create({
           data: {
             userId: session.client_reference_id,
-            stripeSubscriptionId: session.subscription,
             stripeCustomerId: session.customer as string,
-            plan: session.metadata?.plan || 'FREE',
+            stripePriceId: '', // Será preenchido posteriormente
             status: 'active',
             currentPeriodStart: new Date((session.created || 0) * 1000),
             currentPeriodEnd: new Date((session.created || 0) * 1000 + 30 * 24 * 60 * 60 * 1000),
@@ -72,26 +72,23 @@ export async function POST(req: NextRequest) {
       break;
 
     case 'invoice.payment_succeeded':
-      // Renovação mensal
-      console.log('✅ Monthly renewal successful');
+      // Renovação de assinatura bem-sucedida
+      console.log('Invoice payment succeeded');
       break;
 
     case 'customer.subscription.deleted':
-      // Cancelamento
+      // Cancelamento de assinatura
       const subscription = event.data.object;
-      if (subscription.id) {
-        await prisma.user.update({
-          where: { subscriptionId: subscription.id },
-          data: { plan: 'FREE' },
-        });
-        
-        await prisma.subscription.update({
-          where: { stripeSubscriptionId: subscription.id },
-          data: { status: 'cancelled' },
+      if (subscription.customer) {
+        await prisma.user.updateMany({
+          where: { 
+            subscription: {
+              stripeCustomerId: subscription.customer as string
+            }
+          },
+          data: { plan: 'FREE' as any },
         });
       }
-      
-      console.log('❌ Subscription cancelled');
       break;
 
     default:
