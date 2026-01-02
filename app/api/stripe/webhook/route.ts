@@ -7,6 +7,7 @@ interface StripeEvent {
   type: string;
   data: {
     object: {
+      id?: string;
       customer?: string;
       customer_email?: string;
       subscription?: string;
