@@ -379,7 +379,7 @@ export default function PerfilPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Áreas de Atuação</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Selecione as áreas que você atende (seu plano permite {profile?.user.plan === 'FREE' ? '1' : profile?.user.plan === 'PREMIUM' ? '5' : 'ilimitadas'} áreas)
+              Selecione as áreas que você atende (seu plano permite {profile?.plan === 'FREE' ? '1' : profile?.plan === 'PREMIUM' ? '5' : 'ilimitadas'} áreas)
             </p>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
