@@ -1,0 +1,549 @@
+// =============================================================================
+// LEGALAI - DIRETÓRIO DE ADVOGADOS BRASILEIROS NOS EUA
+// Schema Prisma - PostgreSQL (Supabase)
+// Versão: CTO Optimized com todas melhorias
+// =============================================================================
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+enum LawyerPlan {
+  FREE
+  PREMIUM
+  FEATURED
+}
+
+enum CaseStatus {
+  NEW
+  ANALYZING
+  ANALYZED
+  MATCHED
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum CaseUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+// =============================================================================
+// USUÁRIOS
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  photo         String?
+  role          UserRole  @default(CLIENT)
+  
+  // Relações
+  lawyer        Lawyer?
+  client        Client?
+  
+  // Auth
+  emailVerified DateTime?
+  
+  // COMPLIANCE (GDPR/CCPA)
+  consentGiven       Boolean   @default(false)
+  consentDate        DateTime?
+  marketingConsent   Boolean   @default(false)
+  dataRetentionUntil DateTime?
+  deletionRequested  Boolean   @default(false)
+  deletionRequestedAt DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+// =============================================================================
+// ADVOGADOS
+// =============================================================================
+
+model Lawyer {
+  id              String      @id @default(cuid())
+  
+  // Relação com User
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String      @unique
+  
+  // Perfil público
+  slug            String      @unique
+  headline        String?
+  bio             String?     @db.Text
+  photoUrl        String?
+  
+  // Localização
+  city            String
+  state           String
+  address         String?
+  zipcode         String?
+  
+  // Contato público
+  publicPhone     String?
+  publicEmail     String?
+  website         String?
+  whatsapp        String?
+  
+  // Credenciais
+  barNumber       String?
+  barState        String?
+  oabBrazil       String?
+  yearsExperience Int?
+  
+  // Idiomas
+  languages       String[]    @default(["pt", "en"])
+  
+  // Plano e status (SIMPLIFICADO - SEM CRÉDITOS)
+  plan            LawyerPlan  @default(FREE)
+  verified        Boolean     @default(false)
+  featured        Boolean     @default(false)
+  active          Boolean     @default(true)
+  
+  // Estatísticas
+  viewCount       Int         @default(0)
+  contactCount    Int         @default(0)
+  responseTime    Int?        // Minutos médios de resposta
+  
+  // Relações
+  practiceAreas   LawyerPracticeArea[]
+  cases           Case[]
+  reviews         Review[]
+  payments        Payment[]
+  verification    LawyerVerification?
+  conversations   Conversation[]
+  leadPurchases   LeadPurchase[]
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // ÍNDICES OTIMIZADOS (performance++)
+  @@index([city, state, verified, active])
+  @@index([state, verified, active])
+  @@index([plan, featured, verified])
+  @@index([slug])
+}
+
+// =============================================================================
+// VERIFICAÇÃO DE ADVOGADOS (CONFIANÇA++)
+// =============================================================================
+
+model LawyerVerification {
+  id              String             @id @default(cuid())
+  lawyerId        String             @unique
+  lawyer          Lawyer             @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Documentos
+  barLicenseUrl   String?
+  barNumber       String
+  barState        String
+  
+  // Status
+  status          VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  
+  // Checks automáticos
+  barNumberChecked Boolean           @default(false)
+  licenseActive    Boolean           @default(false)
+  
+  rejectedReason   String?           @db.Text
+  
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([status])
+}
+
+// =============================================================================
+// ÁREAS DE ATUAÇÃO
+// =============================================================================
+
+model PracticeArea {
+  id          String    @id @default(cuid())
+  name        String
+  nameEn      String
+  slug        String    @unique
+  description String?   @db.Text
+  icon        String?
+  order       Int       @default(0)
+  active      Boolean   @default(true)
+  
+  lawyers     LawyerPracticeArea[]
+  cases       Case[]
+
+  @@index([slug])
+  @@index([active, order])
+}
+
+model LawyerPracticeArea {
+  id              String        @id @default(cuid())
+  
+  lawyer          Lawyer        @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId        String
+  
+  practiceArea    PracticeArea  @relation(fields: [practiceAreaId], references: [id], onDelete: Cascade)
+  practiceAreaId  String
+  
+  specialization  String?
+  
+  @@unique([lawyerId, practiceAreaId])
+  @@index([practiceAreaId, lawyerId])
+}
+
+// =============================================================================
+// CLIENTES
+// =============================================================================
+
+model Client {
+  id          String    @id @default(cuid())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String    @unique
+  
+  city        String?
+  state       String?
+  preferredLanguage String @default("pt")
+  
+  cases       Case[]
+  reviews     Review[]
+  conversations Conversation[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// =============================================================================
+// CASOS (INTAKE + ANÁLISE)
+// =============================================================================
+
+model Case {
+  id              String      @id @default(cuid())
+  
+  // Cliente
+  client          Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId        String?
+  
+  // Dados de contato (se não tiver conta)
+  contactName     String
+  contactEmail    String?
+  contactPhone    String
+  contactCity     String?
+  contactState    String?
+  
+  // Área do caso
+  practiceArea    PracticeArea @relation(fields: [practiceAreaId], references: [id])
+  practiceAreaId  String
+  
+  // Descrição
+  title           String?
+  description     String      @db.Text
+  additionalInfo  Json?
+  
+  // Status
+  status          CaseStatus  @default(NEW)
+  
+  // Análise
+  analysis        CaseAnalysis?
+  
+  // Match
+  matchedLawyer   Lawyer?     @relation(fields: [matchedLawyerId], references: [id])
+  matchedLawyerId String?
+  matchedAt       DateTime?
+  matchScore      Int?        // Score do algoritmo de match
+  
+  // PRIVACIDADE (GDPR/CCPA)
+  anonymized      Boolean     @default(false)
+  retentionPeriod Int         @default(365)
+  
+  // Lead quality score
+  qualityScore    Int         @default(0)
+  phoneVerified   Boolean     @default(false)
+  emailVerified   Boolean     @default(false)
+  
+  conversations   Conversation[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // ÍNDICES OTIMIZADOS
+  @@index([status, practiceAreaId, createdAt])
+  @@index([matchedLawyerId, status])
+  @@index([qualityScore])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// ANÁLISE DO CASO POR IA
+// =============================================================================
+
+model CaseAnalysis {
+  id              String      @id @default(cuid())
+  
+  case            Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  caseId          String      @unique
+  
+  // Resumo
+  summary         String      @db.Text
+  
+  // Classificação
+  suggestedArea   String
+  urgency         CaseUrgency @default(MEDIUM)
+  complexity      String      @default("medium")
+  
+  // Insights
+  keyIssues       Json        @default("[]")
+  potentialChallenges Json    @default("[]")
+  recommendedActions Json     @default("[]")
+  
+  // Estimativas
+  estimatedCostMin Int?
+  estimatedCostMax Int?
+  estimatedTimeline String?
+  successProbability Int?     // 0-100%
+  
+  // Meta
+  aiModel         String      @default("claude-3-5-sonnet")
+  tokensUsed      Int         @default(0)
+  rawResponse     String?     @db.Text
+  
+  // DISCLAIMER LEGAL
+  disclaimer      String      @default("AVISO: Esta análise é apenas informativa e NÃO constitui aconselhamento jurídico. Consulte um advogado licenciado.")
+  
+  createdAt       DateTime    @default(now())
+
+  @@index([urgency])
+  @@index([caseId])
+}
+
+// =============================================================================
+// CHAT/MENSAGENS IN-APP (CONVERSÃO++)
+// =============================================================================
+
+model Conversation {
+  id          String             @id @default(cuid())
+  caseId      String
+  case        Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  clientId    String
+  client      Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  lawyerId    String
+  lawyer      Lawyer             @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  status      ConversationStatus @default(ACTIVE)
+  
+  messages    Message[]
+  
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([caseId])
+  @@index([clientId])
+  @@index([lawyerId])
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId        String
+  content         String       @db.Text
+  read            Boolean      @default(false)
+  
+  createdAt       DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([read])
+}
+
+// =============================================================================
+// AVALIAÇÕES (COM PROVA)
+// =============================================================================
+
+model Review {
+  id          String    @id @default(cuid())
+  
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String
+  
+  lawyer      Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId    String
+  
+  rating      Int
+  title       String?
+  comment     String?   @db.Text
+  
+  // PROOF OF SERVICE (anti-fake)
+  verified    Boolean   @default(false)
+  ipAddress   String?
+  
+  response    String?   @db.Text
+  respondedAt DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([clientId, lawyerId])
+  @@index([lawyerId, verified])
+  @@index([rating])
+}
+
+// =============================================================================
+// PAGAMENTOS
+// =============================================================================
+
+model Payment {
+  id              String    @id @default(cuid())
+  
+  lawyer          Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId        String
+  
+  stripeSessionId String    @unique
+  stripePaymentId String?
+  
+  amount          Int
+  currency        String    @default("usd")
+  
+  type            String
+  description     String?
+  
+  status          String    @default("pending")
+  
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([lawyerId])
+  @@index([status])
+}
+
+// =============================================================================
+// PAY-PER-LEAD (MODELO HÍBRIDO)
+// =============================================================================
+
+model LeadPurchase {
+  id         String   @id @default(cuid())
+  
+  lawyer     Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId   String
+  
+  caseId     String
+  price      Int
+  
+  status     String   @default("pending")
+  
+  createdAt  DateTime @default(now())
+
+  @@index([lawyerId])
+  @@index([caseId])
+}
+
+// =============================================================================
+// CIDADES
+// =============================================================================
+
+model City {
+  id                  String  @id @default(cuid())
+  name                String
+  state               String
+  stateFullName       String
+  slug                String  @unique
+  
+  brazilianPopulation Int?
+  
+  latitude            Float?
+  longitude           Float?
+  
+  metaTitle           String?
+  metaDescription     String?
+  
+  featured            Boolean @default(false)
+  active              Boolean @default(true)
+
+  @@index([state])
+  @@index([featured])
+  @@index([slug])
+}
+
+// =============================================================================
+// CONFIGURAÇÕES
+// =============================================================================
+
+model Settings {
+  id                  String    @id @default("global")
+  
+  // Preços SIMPLIFICADOS (sem créditos)
+  pricePremium        Int       @default(14900)  // $149/mês
+  priceFeatured       Int       @default(29900)  // $299/mês
+  pricePerLead        Int       @default(2000)   // $20 por lead
+  
+  // Análise paga
+  priceAnalysis       Int       @default(4900)   // $49 análise completa
+  
+  updatedAt           DateTime  @updatedAt
+}
+
+// =============================================================================
+// AUDIT LOG (COMPLIANCE)
+// =============================================================================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  action      String
+  details     String?   @db.Text
+  ipAddress   String?
+  userAgent   String?
+  
+  // COMPLIANCE
+  dataAccessed       String?
+  purpose            String?
+  legalBasis         String?
+  
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
