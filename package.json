@@ -44,7 +44,7 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
