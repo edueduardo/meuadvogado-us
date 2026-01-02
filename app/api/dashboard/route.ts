@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  message: string;
-  createdAt: string;
-}
-
 export async function GET() {
   try {
     // TODO: Implementar autenticação e pegar ID do usuário logado
@@ -56,15 +47,15 @@ export async function GET() {
     const startOfDay = new Date(now.setHours(0, 0, 0, 0));
 
     const leadsThisMonth = lawyer.leads.filter(
-      (lead: Lead) => new Date(lead.createdAt) >= startOfMonth
+      (lead) => new Date(lead.createdAt) >= startOfMonth
     ).length;
 
     const leadsThisWeek = lawyer.leads.filter(
-      (lead: Lead) => new Date(lead.createdAt) >= startOfWeek
+      (lead) => new Date(lead.createdAt) >= startOfWeek
     ).length;
 
     const leadsToday = lawyer.leads.filter(
-      (lead: Lead) => new Date(lead.createdAt) >= startOfDay
+      (lead) => new Date(lead.createdAt) >= startOfDay
     ).length;
 
     // TODO: Implementar sistema de views quando tiver analytics
