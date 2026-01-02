@@ -15,13 +15,21 @@ export async function POST(req: NextRequest) {
 
     const planDetails = PLANS[plan as keyof typeof PLANS];
     
+    // Verificar se o plano tem priceId
+    if (!planDetails.priceId) {
+      return NextResponse.json(
+        { error: 'Plan not available for purchase' },
+        { status: 400 }
+      );
+    }
+    
     // Criar checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [
         {
-          price: planDetails.stripePriceId,
+          price: planDetails.priceId,
           quantity: 1,
         },
       ],

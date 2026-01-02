@@ -20,8 +20,6 @@
     "react-dom": "19.2.3",
     "@prisma/client": "^5.0.0",
     "prisma": "^5.0.0",
-    "next-auth": "^4.24.0",
-    "@next-auth/prisma-adapter": "^1.0.7",
     "@supabase/supabase-js": "^2.38.0",
     "stripe": "^14.9.0",
     "@stripe/stripe-js": "^2.4.0",
