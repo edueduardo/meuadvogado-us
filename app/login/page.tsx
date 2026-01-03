@@ -2,15 +2,42 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    window.location.href = '/dashboard'
+    setError('')
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError('Email ou senha incorretos')
+        setLoading(false)
+        return
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      setError('Erro ao fazer login. Tente novamente.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -27,12 +54,19 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-8 space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
               type="email"
+              name="email"
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="seu@email.com"
@@ -45,6 +79,7 @@ export default function LoginPage() {
             </label>
             <input
               type="password"
+              name="password"
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="••••••••"
