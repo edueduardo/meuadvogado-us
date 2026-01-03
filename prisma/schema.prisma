@@ -547,3 +547,27 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
 }
+
+// =============================================================================
+// DOCUMENTOS (UPLOAD)
+// =============================================================================
+
+model Document {
+  id              String    @id @default(cuid())
+  
+  name            String
+  url             String
+  type            String
+  size            Int
+  
+  uploadedById    String
+  
+  caseId          String?
+  conversationId  String?
+  
+  createdAt       DateTime  @default(now())
+
+  @@index([uploadedById])
+  @@index([caseId])
+  @@index([conversationId])
+}
