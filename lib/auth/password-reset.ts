@@ -4,6 +4,7 @@
 import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/prisma';
 import { emailService } from '@/lib/email/resend-service';
+import { backgroundJobs } from '@/lib/queues';
 import * as bcrypt from 'bcryptjs';
 
 export interface PasswordResetRequest {
@@ -78,14 +79,18 @@ export class PasswordResetService {
         }
       });
 
-      // 5. Enviar email
+      // 5. Enviar email via background job
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
       
-      await emailService.sendPasswordReset({
+      await backgroundJobs.addEmailJob({
         to: user.email,
-        name: user.name,
-        resetUrl,
-        expiresHours: this.TOKEN_EXPIRY_HOURS
+        subject: "Reset de Senha - Meu Advogado",
+        template: 'password-reset',
+        data: {
+          name: user.name,
+          resetUrl,
+          expiresHours: this.TOKEN_EXPIRY_HOURS
+        }
       });
 
       return { 
@@ -176,10 +181,14 @@ export class PasswordResetService {
         }
       });
 
-      // 7. Enviar confirmação
-      await emailService.sendPasswordResetConfirmation({
+      // 7. Enviar confirmação via background job
+      await backgroundJobs.addEmailJob({
         to: resetToken.user.email,
-        name: resetToken.user.name
+        subject: "Senha Alterada com Sucesso - Meu Advogado",
+        template: 'password-reset-confirmation',
+        data: {
+          name: resetToken.user.name
+        }
       });
 
       return { 

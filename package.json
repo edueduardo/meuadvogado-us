@@ -9,7 +9,10 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:seed:complete": "tsx prisma/seed-complete.ts",
+    "db:studio": "prisma studio",
+    "queues:status": "curl http://localhost:3000/api/admin/queues/status",
+    "queues:clear": "curl -X DELETE http://localhost:3000/api/admin/queues/status"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -24,11 +27,13 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-toast": "^1.2.4",
     "@sentry/nextjs": "^10.32.1",
+    "@types/bull": "^3.15.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@upstash/ratelimit": "^1.0.3",
     "@upstash/redis": "^1.36.0",
     "@vercel/blob": "^0.23.4",
     "bcryptjs": "^2.4.3",
+    "bull": "^4.16.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

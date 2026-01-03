@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { z } from 'zod'
@@ -12,10 +12,10 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, 'A senha deve conter pelo menos um número')
   .regex(/[!@#$%^&*]/, 'A senha deve conter pelo menos um caractere especial')
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const token = searchParams?.get('token')
 
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -220,5 +220,17 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
