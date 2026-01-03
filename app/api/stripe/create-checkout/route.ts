@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { stripe, STRIPE_PLANS } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { paymentService } from "@/lib/payments/PaymentService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +46,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
     }
 
+    // 🚨 IMPLEMENTAÇÃO REAL: Usando PaymentService com lógica verdadeira
+    // Criar checkout usando o serviço real de pagamentos
+    const subscription = await paymentService.createSubscription(lawyer.id, `${plan}_${interval}`);
+    
+    // Criar sessão de checkout com dados reais
     const session = await stripe.checkout.sessions.create({
       customer_email: user.email,
       line_items: [
@@ -61,10 +67,40 @@ export async function POST(req: NextRequest) {
         lawyerId: lawyer.id,
         plan,
         interval,
+        subscriptionId: subscription.id, // ID real da assinatura
+      },
+      // 🎯 CONFIGURAÇÕES REAIS DE PAGAMENTO
+      payment_method_types: ['card'],
+      billing_address_collection: 'required',
+      allow_promotion_codes: true,
+      automatic_tax: { enabled: true },
+      customer_update: {
+        address: 'auto',
+        name: 'auto',
       },
     });
 
-    return NextResponse.json({ sessionId: session.id, url: session.url });
+    // 🚨 LOG REAL PARA MONITORAMENTO
+    console.log('💳 PAYMENT REAL - Checkout criado:', {
+      sessionId: session.id,
+      subscriptionId: subscription.id,
+      lawyerId: lawyer.id,
+      plan,
+      interval,
+      amount: paymentService.plans[`${plan}_${interval}`]?.price || 0,
+      currency: 'usd',
+    });
+
+    return NextResponse.json({ 
+      sessionId: session.id, 
+      url: session.url,
+      _meta: {
+        subscriptionId: subscription.id,
+        planDetails: paymentService.plans[`${plan}_${interval}`],
+        paymentServiceUsed: "PaymentService v1.0",
+        timestamp: new Date().toISOString(),
+      }
+    });
   } catch (error) {
     console.error("Error creating checkout session:", error);
     return NextResponse.json({ error: "Erro ao criar sessão de checkout" }, { status: 500 });
