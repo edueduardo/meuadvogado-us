@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
         // requiredDocuments: analysis.requiredDocuments, // Campo não existe
         // jurisdiction: analysis.jurisdiction, // Campo não existe
         // precedents: analysis.precedents, // Campo não existe
+        suggestedArea: caseData.practiceArea?.name || "Geral", // Campo obrigatório adicionado
         estimatedCostMin: analysis.estimatedCosts?.min || 0,
         estimatedCostMax: analysis.estimatedCosts?.max || 0,
         aiModel: "claude-3-5-sonnet-20241022",
