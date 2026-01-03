@@ -117,7 +117,7 @@ export class AnalyticsService {
       clientSatisfaction,
       profileViews,
     ] = await Promise.all([
-      prisma.case.count({ where: { lawyerId } }),
+      prisma.case.count({ where: { matchedLawyerId: lawyerId } }),
       this.getWonCases(lawyerId),
       this.getLostCases(lawyerId),
       this.getPendingCases(lawyerId),
