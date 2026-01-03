@@ -1,6 +1,73 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+interface Stats {
+  lawyers: {
+    total: number
+    verified: number
+    cities: number
+    states: number
+  }
+  practiceAreas: number
+  cases: {
+    total: number
+    byStatus: Record<string, number>
+  }
+  clients: number
+  lastUpdated: string
+  error?: string
+}
+
+interface Lawyer {
+  id: string
+  name: string
+  slug: string
+  headline?: string
+  city: string
+  state: string
+  plan: string
+  verified: boolean
+  featured: boolean
+  yearsExperience?: number
+  languages: string[]
+  practiceAreas: Array<{
+    name: string
+    slug: string
+  }>
+  rating: number
+  reviewCount: number
+}
 
 export default function Home() {
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [recentLawyers, setRecentLawyers] = useState<Lawyer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      // Buscar stats e advogados recentes em paralelo
+      const [statsResponse, lawyersResponse] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/lawyers/recent')
+      ])
+
+      const statsData = await statsResponse.json()
+      const lawyersData = await lawyersResponse.json()
+
+      setStats(statsData)
+      setRecentLawyers(lawyersData.lawyers || [])
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Header */}
@@ -89,29 +156,152 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats - DADOS REAIS */}
       <section className="bg-blue-600 py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
             <div>
-              <div className="text-4xl font-bold">150+</div>
+              <div className="text-4xl font-bold">
+                {loading ? '...' : stats?.lawyers.total || 0}
+                {!loading && stats?.lawyers.verified && (
+                  <span className="text-xl text-blue-200 block">
+                    ({stats.lawyers.verified} verificados)
+                  </span>
+                )}
+              </div>
               <div className="text-blue-100">Advogados</div>
             </div>
             <div>
-              <div className="text-4xl font-bold">50+</div>
+              <div className="text-4xl font-bold">
+                {loading ? '...' : stats?.lawyers.cities || 0}
+              </div>
               <div className="text-blue-100">Cidades</div>
             </div>
             <div>
-              <div className="text-4xl font-bold">10+</div>
+              <div className="text-4xl font-bold">
+                {loading ? '...' : stats?.practiceAreas || 0}
+              </div>
               <div className="text-blue-100">Áreas de Atuação</div>
             </div>
             <div>
-              <div className="text-4xl font-bold">1.000+</div>
-              <div className="text-blue-100">Casos Resolvidos</div>
+              <div className="text-4xl font-bold">
+                {loading ? '...' : stats?.cases.total || 0}
+              </div>
+              <div className="text-blue-100">Casos</div>
             </div>
           </div>
+          {stats?.error && (
+            <div className="text-center text-blue-200 text-sm mt-4">
+              ⚠️ {stats.error}
+            </div>
+          )}
         </div>
       </section>
+
+      {/* Recent Lawyers - DADOS REAIS */}
+      {!loading && recentLawyers.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Advogados Verificados Recentes
+            </h2>
+            <p className="text-xl text-gray-600">
+              Conheça alguns de nossos advogados brasileiros qualificados nos EUA
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {recentLawyers.map((lawyer) => (
+              <Link
+                key={lawyer.id}
+                href={`/advogados/${lawyer.slug}`}
+                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow p-6"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                      {lawyer.name}
+                    </h3>
+                    {lawyer.headline && (
+                      <p className="text-gray-600 text-sm mb-2">{lawyer.headline}</p>
+                    )}
+                    <div className="flex items-center text-sm text-gray-500">
+                      <span>📍 {lawyer.city}, {lawyer.state}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    {lawyer.verified && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-1">
+                        ✅ Verificado
+                      </span>
+                    )}
+                    {lawyer.featured && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        ⭐ Destaque
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {lawyer.practiceAreas.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1">
+                      {lawyer.practiceAreas.slice(0, 3).map((area) => (
+                        <span
+                          key={area.slug}
+                          className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                        >
+                          {area.name}
+                        </span>
+                      ))}
+                      {lawyer.practiceAreas.length > 3 && (
+                        <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                          +{lawyer.practiceAreas.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center">
+                    {lawyer.rating > 0 && (
+                      <>
+                        <span className="text-yellow-500">★</span>
+                        <span className="ml-1 text-gray-600">
+                          {lawyer.rating.toFixed(1)}
+                        </span>
+                        {lawyer.reviewCount > 0 && (
+                          <span className="text-gray-400 ml-1">
+                            ({lawyer.reviewCount})
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {lawyer.yearsExperience && (
+                      <span className="ml-4 text-gray-500">
+                        {lawyer.yearsExperience} anos exp.
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-blue-600 font-medium">
+                    Ver perfil →
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Link
+              href="/advogados"
+              className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+            >
+              Ver Todos os Advogados →
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 py-20">
