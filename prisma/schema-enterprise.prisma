@@ -1,0 +1,845 @@
+// =============================================================================
+// ENTERPRISE DATABASE SCHEMA - PERFORMANCE & SEGURANÇA MÁXIMA
+// =============================================================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// USUÁRIOS E AUTENTICAÇÃO
+// =============================================================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  emailVerified     Boolean  @default(false)
+  emailVerifiedAt   DateTime?
+  password          String   // bcrypt hash
+  name              String
+  phone             String?
+  avatar            String?
+  role              UserRole @default(CLIENT)
+  isActive          Boolean  @default(true)
+  isEmailVerified   Boolean  @default(false)
+  lastLoginAt       DateTime?
+  passwordResetToken String? @unique
+  passwordResetExpires DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relacionamentos
+  lawyer            Lawyer?
+  client            Client?
+  sessions          Session[]
+  securitySettings  UserSecuritySettings?
+  twoFactorAuth     User2FA?
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  apiKeys           ApiKey[]
+  
+  // Índices de performance
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([lastLoginAt])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  refreshToken String?  @unique
+  userAgent    String?
+  ipAddress    String?
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  lastAccessAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@map("sessions")
+}
+
+model UserSecuritySettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  twoFactorEnabled  Boolean  @default(false)
+  emailNotifications Boolean @default(true)
+  smsNotifications  Boolean  @default(false)
+  pushNotifications Boolean @default(false)
+  loginAlerts       Boolean  @default(true)
+  sessionTimeout    Int      @default(1800) // 30 minutos
+  maxSessions       Int      @default(3)
+  allowedIPs        String[] // Array de IPs permitidos
+  blockedIPs        String[] // Array de IPs bloqueados
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_security_settings")
+}
+
+model User2FA {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  secret    String   // TOTP secret
+  backupCodes String[] // Códigos backup
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_2fa")
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  key         String    @unique
+  permissions String[]  // Array de permissões
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  usageCount  Int       @default(0)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([key])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+// =============================================================================
+// PERFIS DE USUÁRIOS
+// =============================================================================
+
+model Lawyer {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  oabNumber         String    @unique
+  oabUf             String
+  specialty         String?
+  bio               String?
+  experience        Int       @default(0) // anos
+  consultationFee   Decimal   @default(0.00) @db.Decimal(10, 2)
+  isAvailable       Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  verificationDocs  String?   // JSON com documentos
+  rating            Decimal   @default(0.00) @db.Decimal(3, 2)
+  totalCases        Int       @default(0)
+  wonCases          Int       @default(0)
+  responseTime      Int       @default(0) // minutos
+  languages         String[]  @default([])
+  education         String?   // JSON com formação
+  awards            String?   // JSON com prêmios
+  publications      String?   // JSON com publicações
+  socialMedia       String?   // JSON com redes sociais
+  officeAddress     String?
+  officePhone       String?
+  website           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practiceAreas     LawyerPracticeArea[]
+  cases             Case[]    @relation("LawyerCases")
+  reviews           Review[]  @relation("LawyerReviews")
+  subscriptions     Subscription[]
+  schedule          Schedule[]
+  documents         Document[]
+  conversations     Conversation[] @relation("LawyerConversations")
+  payments          Payment[]
+  auditLogs         AuditLog[]
+  
+  @@index([userId])
+  @@index([oabNumber])
+  @@index([isVerified])
+  @@index([isAvailable])
+  @@index([rating])
+  @@index([specialty])
+  @@map("lawyers")
+}
+
+model Client {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  cpf               String    @unique
+  rg                String?
+  birthDate         DateTime?
+  gender            Gender?
+  nationality       String    @default("Brasileira")
+  maritalStatus     String?
+  occupation        String?
+  income            Decimal?  @db.Decimal(12, 2)
+  education         String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  emergencyContact  String?   // JSON com contato emergência
+  lawyerId          String?
+  preferredLawyerId String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lawyer            Lawyer?   @relation(fields: [lawyerId], references: [id])
+  preferredLawyer   Lawyer?   @relation("PreferredLawyer", fields: [preferredLawyerId], references: [id])
+  cases             Case[]    @relation("ClientCases")
+  reviews           Review[]  @relation("ClientReviews")
+  documents         Document[]
+  conversations     Conversation[] @relation("ClientConversations")
+  payments          Payment[]
+  auditLogs         AuditLog[]
+  
+  @@index([userId])
+  @@index([cpf])
+  @@index([city])
+  @@index([state])
+  @@index([lawyerId])
+  @@map("clients")
+}
+
+// =============================================================================
+// ÁREAS DE PRÁTICA
+// =============================================================================
+
+model PracticeArea {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lawyers     LawyerPracticeArea[]
+  cases       Case[]
+  
+  @@index([isActive])
+  @@index([order])
+  @@map("practice_areas")
+}
+
+model LawyerPracticeArea {
+  id             String @id @default(cuid())
+  lawyerId       String
+  practiceAreaId String
+  experience     Int    @default(0) // anos na área
+  isPrimary      Boolean @default(false)
+  
+  lawyer         Lawyer       @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  practiceArea   PracticeArea @relation(fields: [practiceAreaId], references: [id], onDelete: Cascade)
+  
+  @@unique([lawyerId, practiceAreaId])
+  @@index([lawyerId])
+  @@index([practiceAreaId])
+  @@map("lawyer_practice_areas")
+}
+
+// =============================================================================
+// CASOS E PROCESSOS
+// =============================================================================
+
+model Case {
+  id                String      @id @default(cuid())
+  clientId          String
+  lawyerId          String?
+  practiceAreaId    String?
+  title             String
+  description       String      @db.Text
+  category          String?
+  status            CaseStatus  @default(NEW)
+  priority          Priority    @default(MEDIUM)
+  complexity        Complexity  @default(MEDIUM)
+  estimatedValue    Decimal?    @db.Decimal(12, 2)
+  actualValue       Decimal?    @db.Decimal(12, 2)
+  estimatedDuration Int?        // dias
+  actualDuration    Int?        // dias
+  successProbability Int?       // 0-100
+  deadline          DateTime?
+  court             String?
+  processNumber     String?     @unique
+  tags              String[]
+  notes             String?     @db.Text
+  isPublic          Boolean     @default(false)
+  isArchived        Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  client            Client      @relation("ClientCases", fields: [clientId], references: [id])
+  lawyer            Lawyer?     @relation("LawyerCases", fields: [lawyerId], references: [id])
+  practiceArea      PracticeArea?
+  analysis          CaseAnalysis?
+  documents         Document[]
+  events            CaseEvent[]
+  reviews           Review[]
+  conversations     Conversation[]
+  payments          Payment[]
+  auditLogs         AuditLog[]
+  
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([practiceAreaId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([deadline])
+  @@index([processNumber])
+  @@map("cases")
+}
+
+model CaseAnalysis {
+  id                  String   @id @default(cuid())
+  caseId              String   @unique
+  summary             String   @db.Text
+  legalBasis          String?  @db.Text
+  recommendedActions  String?  @db.Text
+  riskFactors         String?  @db.Text
+  estimatedTimeline   String?
+  estimatedCostMin    Decimal  @default(0.00) @db.Decimal(10, 2)
+  estimatedCostMax    Decimal  @default(0.00) @db.Decimal(10, 2)
+  successProbability  Int      @default(0) // 0-100
+  jurisdiction        String?
+  precedents          String?  @db.Text
+  suggestedArea       String?
+  aiModel             String?
+  confidence          Decimal? @db.Decimal(3, 2)
+  analysisTime        Int?     // ms
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  case                Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  @@index([caseId])
+  @@map("case_analyses")
+}
+
+model CaseEvent {
+  id          String      @id @default(cuid())
+  caseId      String
+  type        EventType   @default(NOTE)
+  title       String
+  description String?     @db.Text
+  date        DateTime    @default(now())
+  createdBy   String      // userId
+  metadata    String?     // JSON
+  
+  case        Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  @@index([caseId])
+  @@index([type])
+  @@index([date])
+  @@index([createdBy])
+  @@map("case_events")
+}
+
+// =============================================================================
+// CHAT E COMUNICAÇÃO
+// =============================================================================
+
+model Conversation {
+  id           String           @id @default(cuid())
+  clientId     String
+  lawyerId     String
+  caseId       String?
+  title        String
+  status       ConversationStatus @default(ACTIVE)
+  lastMessageAt DateTime?
+  isArchived   Boolean          @default(false)
+  metadata     String?          // JSON
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  client       Client           @relation("ClientConversations", fields: [clientId], references: [id])
+  lawyer       Lawyer           @relation("LawyerConversations", fields: [lawyerId], references: [id])
+  case         Case?            @relation(fields: [caseId], references: [id])
+  messages     Message[]
+  participants ConversationParticipant[]
+  
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([caseId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String      // userId
+  content        String      @db.Text
+  type           MessageType @default(TEXT)
+  status         MessageStatus @default(SENT)
+  replyToId      String?
+  attachments    String?     // JSON array de URLs
+  reactions      String?     // JSON de reações
+  isEdited       Boolean     @default(false)
+  editedAt       DateTime?
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]    @relation("MessageReplies")
+  readReceipts   ReadReceipt[]
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([readAt])
+  @@map("messages")
+}
+
+model ReadReceipt {
+  id         String   @id @default(cuid())
+  messageId  String
+  userId     String
+  readAt     DateTime @default(now())
+  
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("read_receipts")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  role           String   @default("participant")
+  joinedAt       DateTime @default(now())
+  leftAt         DateTime?
+  lastReadAt     DateTime?
+  isMuted        Boolean  @default(false)
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+// =============================================================================
+// PAGAMENTOS E ASSINATURAS
+// =============================================================================
+
+model Subscription {
+  id            String           @id @default(cuid())
+  lawyerId      String
+  planId        String
+  stripeId      String?          @unique
+  status        SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd Boolean          @default(false)
+  canceledAt    DateTime?
+  trialStart    DateTime?
+  trialEnd      DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  lawyer        Lawyer           @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+  
+  @@index([lawyerId])
+  @@index([status])
+  @@index([stripeId])
+  @@index([currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  subscriptionId  String?
+  lawyerId        String?
+  clientId        String?
+  stripeId        String?       @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("BRL")
+  status          PaymentStatus @default(PENDING)
+  type            PaymentType   @default(SUBSCRIPTION)
+  description     String?
+  metadata        String?       // JSON
+  failureReason   String?
+  refundedAmount  Decimal?      @db.Decimal(10, 2)
+  refundedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id])
+  lawyer          Lawyer?       @relation(fields: [lawyerId], references: [id])
+  client          Client?       @relation(fields: [clientId], references: [id])
+  
+  @@index([subscriptionId])
+  @@index([lawyerId])
+  @@index([clientId])
+  @@index([status])
+  @@index([type])
+  @@index([stripeId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// =============================================================================
+// DOCUMENTOS E ARQUIVOS
+// =============================================================================
+
+model Document {
+  id           String       @id @default(cuid())
+  caseId       String?
+  userId       String
+  name         String
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  type         DocumentType @default(OTHER)
+  description  String?
+  tags         String[]
+  isPublic     Boolean      @default(false)
+  isArchived   Boolean      @default(false)
+  version      Int          @default(1)
+  checksum     String?      // SHA-256
+  metadata     String?      // JSON
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  case         Case?        @relation(fields: [caseId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  
+  @@index([caseId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([checksum])
+  @@map("documents")
+}
+
+// =============================================================================
+// AGENDAMENTO
+// =============================================================================
+
+model Schedule {
+  id           String        @id @default(cuid())
+  lawyerId     String
+  clientId     String?
+  title        String
+  description  String?
+  startTime    DateTime
+  endTime      DateTime
+  status       ScheduleStatus @default(SCHEDULED)
+  type         ScheduleType   @default(CONSULTATION)
+  location     String?
+  isOnline     Boolean       @default(false)
+  meetingUrl   String?
+  maxParticipants Int         @default(2)
+  notes        String?
+  metadata     String?       // JSON
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  lawyer       Lawyer        @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  @@index([lawyerId])
+  @@index([clientId])
+  @@index([startTime])
+  @@index([status])
+  @@index([type])
+  @@map("schedules")
+}
+
+// =============================================================================
+// AVALIAÇÕES E FEEDBACK
+// =============================================================================
+
+model Review {
+  id          String   @id @default(cuid())
+  lawyerId    String
+  clientId    String
+  caseId      String?
+  rating      Int      // 1-5
+  comment     String?  @db.Text
+  pros        String?  @db.Text
+  cons        String?  @db.Text
+  wouldRecommend Boolean @default(true)
+  isVerified  Boolean  @default(false)
+  isPublic    Boolean  @default(true)
+  response    String?  @db.Text // Resposta do advogado
+  respondedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lawyer      Lawyer   @relation("LawyerReviews", fields: [lawyerId], references: [id])
+  client      Client   @relation("ClientReviews", fields: [clientId], references: [id])
+  case        Case?    @relation(fields: [caseId], references: [id])
+  
+  @@index([lawyerId])
+  @@index([clientId])
+  @@index([caseId])
+  @@index([rating])
+  @@index([isPublic])
+  @@map("reviews")
+}
+
+// =============================================================================
+// NOTIFICAÇÕES
+// =============================================================================
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String           @db.Text
+  data       String?          // JSON
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+  
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// =============================================================================
+// AUDITORIA E LOGS
+// =============================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  resource    String
+  resourceId  String?
+  oldValues   String?  // JSON
+  newValues   String?  // JSON
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now())
+  
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  metadata  String?  // JSON
+  createdAt DateTime @default(now())
+  
+  @@index([event])
+  @@index([userId])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("security_logs")
+}
+
+// =============================================================================
+// CONFIGURAÇÕES E SISTEMA
+// =============================================================================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  type      String   @default("string") // string, number, boolean, json
+  category  String   @default("general")
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([category])
+  @@index([key])
+  @@map("system_configs")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum CaseStatus {
+  NEW
+  ANALYZING
+  MATCHED
+  CONTACTED
+  CONVERTED
+  IN_PROGRESS
+  AWAITING_DOCUMENTS
+  AWAITING_PAYMENT
+  IN_COURT
+  MEDIATION
+  SETTLED
+  WON
+  LOST
+  CLOSED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Complexity {
+  SIMPLE
+  MEDIUM
+  COMPLEX
+  VERY_COMPLEX
+}
+
+enum EventType {
+  NOTE
+  DOCUMENT
+  PHONE_CALL
+  EMAIL
+  MEETING
+  COURT_DATE
+  DEADLINE
+  PAYMENT
+  STATUS_CHANGE
+}
+
+enum ConversationStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  AUDIO
+  VIDEO
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  CONSULTATION
+  DOCUMENT_FEE
+  COURT_FEE
+  OTHER
+}
+
+enum DocumentType {
+  CONTRACT
+  IDENTITY
+  PROOF_OF_ADDRESS
+  COURT_DOCUMENT
+  MEDICAL_REPORT
+  FINANCIAL_DOCUMENT
+  PHOTO
+  VIDEO
+  AUDIO
+  OTHER
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum ScheduleType {
+  CONSULTATION
+  FOLLOW_UP
+  COURT_DATE
+  MEDIATION
+  MEETING
+  OTHER
+}
+
+enum NotificationType {
+  CASE_UPDATE
+  MESSAGE_RECEIVED
+  PAYMENT_RECEIVED
+  APPOINTMENT_REMINDER
+  DEADLINE_REMINDER
+  SYSTEM_ANNOUNCEMENT
+  SECURITY_ALERT
+}

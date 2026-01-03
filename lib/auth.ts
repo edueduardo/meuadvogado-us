@@ -4,6 +4,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { prisma } from "./prisma";
 
 export const authOptions: NextAuthOptions = {
@@ -82,3 +83,35 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+// Verify JWT token function
+export async function verifyToken(token: string): Promise<any> {
+  try {
+    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as any;
+    
+    // Fetch user from database to ensure they're still active
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: {
+        lawyer: true,
+        client: true,
+      },
+    });
+
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      lawyerId: user.lawyer?.id,
+      clientId: user.client?.id,
+    };
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return null;
+  }
+}

@@ -1,10 +1,11 @@
 // =============================================================================
 // LEGALAI - REALTIME COMMUNICATION SERVICE (WEBSOCKETS)
 // =============================================================================
-// import { Server as SocketIOServer } from 'socket.io'; // Dependência não instalada
-// import { Server as HTTPServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { Server as HTTPServer } from 'http';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
-// import { verifyToken } from '@/lib/auth'; // Função não existe
+import { verifyToken } from '@/lib/auth';
 
 export interface OnlineUser {
   userId: string;
@@ -22,307 +23,261 @@ export interface MessageData {
 }
 
 export class RealtimeService {
-  // private io: SocketIOServer; // Socket.io não instalado
+  private io: SocketIOServer;
   private onlineUsers: Map<string, OnlineUser> = new Map();
 
-  constructor() {
-    // Temporário - Socket.io não instalado
-    // this.io = new SocketIOServer(server, {
-    //   cors: {
-    //     origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-    //     methods: ['GET', 'POST'],
-    //   },
-    // });
-    // this.setupEventHandlers();
+  constructor(server: HTTPServer) {
+    this.io = new SocketIOServer(server, {
+      cors: {
+        origin: process.env.NEXTAUTH_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+      },
+      transports: ['websocket', 'polling']
+    });
+
+    this.setupEventHandlers();
   }
 
-  private setupEventHandlers(): void {
-    // Temporário - Socket.io não instalado
-    // this.io.use(async (socket, next) => {
-    //   try {
-    //     const token = socket.handshake.auth.token;
-    //     const user = await verifyToken(token);
-    //     socket.data.user = user;
-    //     next();
-    //   } catch (error) {
-    //     next(new Error('Authentication error'));
-    //   }
-    // });
-    // this.io.on('connection', (socket) => {
-    //   this.handleConnection(socket);
-    // });
+  private setupEventHandlers() {
+    this.io.on('connection', (socket) => {
+      console.log(` User connected: ${socket.id}`);
+
+      // Autenticação do usuário
+      socket.on('authenticate', async (token: string) => {
+        try {
+          const user = await verifyToken(token);
+          if (!user) {
+            socket.emit('auth_error', 'Invalid token');
+            return;
+          }
+
+          // Adicionar usuário aos online
+          this.onlineUsers.set(user.id, {
+            userId: user.id,
+            role: user.role,
+            socketId: socket.id,
+            lastSeen: new Date()
+          });
+
+          socket.userId = user.id;
+          socket.userRole = user.role;
+
+          // Entrar nas salas do usuário
+          await this.joinUserRooms(socket, user.id);
+
+          socket.emit('authenticated', { userId: user.id, role: user.role });
+          this.broadcastUserStatus(user.id, 'online');
+
+        } catch (error) {
+          console.error('Authentication error:', error);
+          socket.emit('auth_error', 'Authentication failed');
+        }
+      });
+
+      // Entrar em sala de conversa
+      socket.on('join_conversation', (conversationId: string) => {
+        if (!socket.userId) return;
+        
+        socket.join(`conversation_${conversationId}`);
+        console.log(` User ${socket.userId} joined conversation ${conversationId}`);
+      });
+
+      // Sair de sala de conversa
+      socket.on('leave_conversation', (conversationId: string) => {
+        socket.leave(`conversation_${conversationId}`);
+        console.log(` User ${socket.userId} left conversation ${conversationId}`);
+      });
+
+      // Enviar mensagem em tempo real
+      socket.on('send_message', async (data: MessageData) => {
+        try {
+          if (!socket.userId) return;
+
+          // Salvar mensagem no banco
+          const message = await prisma.message.create({
+            data: {
+              conversationId: data.conversationId,
+              senderId: data.senderId,
+              content: data.content,
+              type: data.type || 'TEXT',
+              isRead: false
+            },
+            include: {
+              sender: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          });
+
+          // Atualizar timestamp da conversa
+          await prisma.conversation.update({
+            where: { id: data.conversationId },
+            data: { lastMessageAt: new Date() }
+          });
+
+          // Broadcast para sala da conversa
+          this.io.to(`conversation_${data.conversationId}`).emit('new_message', message);
+
+          // Notificar destinatário se não estiver na sala
+          await this.notifyRecipient(data.conversationId, message);
+
+        } catch (error) {
+          console.error('Send message error:', error);
+          socket.emit('message_error', 'Failed to send message');
+        }
+      });
+
+      // Indicador de "digitando..."
+      socket.on('typing_start', (conversationId: string) => {
+        if (!socket.userId) return;
+        
+        socket.to(`conversation_${conversationId}`).emit('user_typing', {
+          userId: socket.userId,
+          conversationId
+        });
+      });
+
+      socket.on('typing_stop', (conversationId: string) => {
+        if (!socket.userId) return;
+        
+        socket.to(`conversation_${conversationId}`).emit('user_stop_typing', {
+          userId: socket.userId,
+          conversationId
+        });
+      });
+
+      // Marcar mensagens como lidas
+      socket.on('mark_read', async (conversationId: string) => {
+        try {
+          if (!socket.userId) return;
+
+          await prisma.message.updateMany({
+            where: {
+              conversationId,
+              senderId: { not: socket.userId },
+              isRead: false
+            },
+            data: { isRead: true, readAt: new Date() }
+          });
+
+          socket.to(`conversation_${conversationId}`).emit('messages_read', {
+            userId: socket.userId,
+            conversationId
+          });
+
+        } catch (error) {
+          console.error('Mark read error:', error);
+        }
+      });
+
+      // Disconexão
+      socket.on('disconnect', () => {
+        if (socket.userId) {
+          this.onlineUsers.delete(socket.userId);
+          this.broadcastUserStatus(socket.userId, 'offline');
+          console.log(` User disconnected: ${socket.userId}`);
+        }
+      });
+    });
   }
 
-  private handleConnection(socket: any): void {
-    // Temporário - Socket.io não instalado
-    /*
-    const user = socket.data.user;
-    
-    // Marcar usuário como online
-    const onlineUser: OnlineUser = {
-      userId: user.id,
-      role: user.role,
-      socketId: socket.id,
-      lastSeen: new Date(),
-    };
-
-    this.onlineUsers.set(user.id, onlineUser);
-
-    // Entrar nas salas do usuário
-    this.joinUserRooms(socket, user);
-
-    // Enviar lista de usuários online
-    this.broadcastOnlineUsers();
-
-    // Setup event handlers
-    socket.on('join_conversation', (conversationId: string) => {
-      this.handleJoinConversation(socket, conversationId);
-    });
-
-    socket.on('leave_conversation', (conversationId: string) => {
-      this.handleLeaveConversation(socket, conversationId);
-    });
-
-    socket.on('send_message', async (data: MessageData) => {
-      await this.handleSendMessage(socket, data);
-    });
-
-    socket.on('typing_start', (conversationId: string) => {
-      this.handleTypingStart(socket, conversationId);
-    });
-
-    socket.on('typing_stop', (conversationId: string) => {
-      this.handleTypingStop(socket, conversationId);
-    });
-
-    socket.on('video_call_request', (data: { conversationId: string; targetUserId: string }) => {
-      this.handleVideoCallRequest(socket, data);
-    });
-
-    socket.on('video_call_accept', (data: { conversationId: string; callerId: string }) => {
-      this.handleVideoCallAccept(socket, data);
-    });
-
-    socket.on('video_call_reject', (data: { conversationId: string; callerId: string }) => {
-      this.handleVideoCallReject(socket, data);
-    });
-
-    socket.on('disconnect', () => {
-      this.handleDisconnect(socket);
-    });
-  }
-
-  private async joinUserRooms(socket: any, user: any): Promise<void> {
+  private async joinUserRooms(socket: any, userId: string) {
     try {
       // Buscar conversas do usuário
       const conversations = await prisma.conversation.findMany({
         where: {
           OR: [
-            { lawyerId: user.id },
-            { clientId: user.id },
-          ],
-        },
-        select: { id: true },
+            { clientId: userId },
+            { lawyerId: userId }
+          ]
+        }
       });
 
-      // Entrar em cada sala de conversa
-      conversations.forEach((conversation) => {
-        socket.join(`conversation:${conversation.id}`);
+      // Entrar em todas as salas de conversa
+      conversations.forEach(conv => {
+        socket.join(`conversation_${conv.id}`);
       });
 
-      // Entrar na sala pessoal do usuário
-      socket.join(`user:${user.id}`);
+      console.log(` User ${userId} joined ${conversations.length} conversation rooms`);
     } catch (error) {
       console.error('Error joining user rooms:', error);
     }
   }
 
-  private async handleJoinConversation(socket: any, conversationId: string): Promise<void> {
+  private async notifyRecipient(conversationId: string, message: any) {
     try {
-      // Verificar se usuário tem permissão
-      const conversation = await prisma.conversation.findFirst({
-        where: {
-          id: conversationId,
-          OR: [
-            { lawyerId: socket.data.user.id },
-            { clientId: socket.data.user.id },
-          ],
-        },
-      });
-
-      if (conversation) {
-        socket.join(`conversation:${conversationId}`);
-        
-        // Notificar outros participantes
-        socket.to(`conversation:${conversationId}`).emit('user_joined', {
-          userId: socket.data.user.id,
-          conversationId,
-        });
-      }
-    } catch (error) {
-      socket.emit('error', { message: 'Failed to join conversation' });
-    }
-  }
-
-  private async handleSendMessage(socket: any, data: MessageData): Promise<void> {
-    try {
-      // Salvar mensagem no banco
-      const message = await prisma.message.create({
-        data: {
-          conversationId: data.conversationId,
-          senderId: data.senderId,
-          content: data.content,
-          isRead: false,
-        },
+      // Buscar conversa para encontrar o destinatário
+      const conversation = await prisma.conversation.findUnique({
+        where: { id: conversationId },
         include: {
-          conversation: {
-            include: {
-              lawyer: { include: { user: true } },
-              client: { include: { user: true } },
-            },
-          },
-        },
+          client: { include: { user: true } },
+          lawyer: { include: { user: true } }
+        }
       });
 
-      // Broadcast para sala da conversa
-      this.io.to(`conversation:${data.conversationId}`).emit('new_message', {
-        id: message.id,
-        conversationId: message.conversationId,
-        senderId: message.senderId,
-        content: message.content,
-        createdAt: message.createdAt,
-        isRead: message.isRead,
-      });
+      if (!conversation) return;
 
-      // Enviar notificação push para usuário offline
-      const recipientId = message.conversation.lawyerId === data.senderId 
-        ? message.conversation.clientId 
-        : message.conversation.lawyerId;
+      const recipientId = message.senderId === conversation.clientId 
+        ? conversation.lawyerId 
+        : conversation.clientId;
 
-      if (recipientId && !this.isUserOnline(recipientId)) {
-        await this.sendPushNotification(recipientId, {
-          title: 'Nova mensagem',
-          body: `Você recebeu uma nova mensagem`,
-          data: {
-            conversationId: data.conversationId,
-            messageId: message.id,
-          },
+      const recipientSocket = Array.from(this.onlineUsers.values())
+        .find(user => user.userId === recipientId);
+
+      if (recipientSocket) {
+        // Usuário online - notificar via socket
+        this.io.to(recipientSocket.socketId).emit('new_notification', {
+          type: 'new_message',
+          conversationId,
+          message,
+          sender: message.sender
         });
+      } else {
+        // Usuário offline - aqui você poderia implementar notificação push/email
+        console.log(` User ${recipientId} offline - would send push notification`);
       }
-
     } catch (error) {
-      socket.emit('error', { message: 'Failed to send message' });
+      console.error('Error notifying recipient:', error);
     }
   }
 
-  private handleTypingStart(socket: any, conversationId: string): void {
-    socket.to(`conversation:${conversationId}`).emit('user_typing', {
-      userId: socket.data.user.id,
-      conversationId,
-      isTyping: true,
-    });
-  }
-
-  private handleTypingStop(socket: any, conversationId: string): void {
-    socket.to(`conversation:${conversationId}`).emit('user_typing', {
-      userId: socket.data.user.id,
-      conversationId,
-      isTyping: false,
-    });
-  }
-
-  private async handleVideoCallRequest(socket: any, data: { conversationId: string; targetUserId: string }): Promise<void> {
-    const targetSocket = this.getSocketByUserId(data.targetUserId);
-    
-    if (targetSocket) {
-      targetSocket.emit('video_call_request', {
-        conversationId: data.conversationId,
-        callerId: socket.data.user.id,
-        callerName: socket.data.user.name,
-      });
-    }
-  }
-
-  private async handleVideoCallAccept(socket: any, data: { conversationId: string; callerId: string }): Promise<void> {
-    const callerSocket = this.getSocketByUserId(data.callerId);
-    
-    if (callerSocket) {
-      callerSocket.emit('video_call_accepted', {
-        conversationId: data.conversationId,
-        acceptorId: socket.data.user.id,
-      });
-    }
-  }
-
-  private async handleVideoCallReject(socket: any, data: { conversationId: string; callerId: string }): Promise<void> {
-    const callerSocket = this.getSocketByUserId(data.callerId);
-    
-    if (callerSocket) {
-      callerSocket.emit('video_call_rejected', {
-        conversationId: data.conversationId,
-        rejectorId: socket.data.user.id,
-      });
-    }
-  }
-
-  private handleDisconnect(socket: any): void {
-    const user = socket.data.user;
-    this.onlineUsers.delete(user.id);
-    this.broadcastOnlineUsers();
-  }
-
-  private broadcastOnlineUsers(): void {
-    const onlineUsersList = Array.from(this.onlineUsers.values());
-    this.io.emit('online_users_updated', onlineUsersList);
-  }
-
-  private isUserOnline(userId: string): boolean {
-    return this.onlineUsers.has(userId);
-  }
-
-  private getSocketByUserId(userId: string): any {
-    const onlineUser = this.onlineUsers.get(userId);
-    if (onlineUser) {
-      return this.io.sockets.sockets.get(onlineUser.socketId);
-    }
-    return null;
-  }
-
-  private async sendPushNotification(userId: string, notification: {
-    title: string;
-    body: string;
-    data?: Record<string, any>;
-  }): Promise<void> {
-    // Implementar com Firebase Cloud Messaging ou OneSignal
-    console.log('Push notification:', notification);
+  private broadcastUserStatus(userId: string, status: 'online' | 'offline') {
+    this.io.emit('user_status_changed', { userId, status });
   }
 
   // Métodos públicos
-  public emitToUser(userId: string, event: string, data: any): void {
-    this.io.to(`user:${userId}`).emit(event, data);
-  }
-
-  public emitToConversation(conversationId: string, event: string, data: any): void {
-    this.io.to(`conversation:${conversationId}`).emit(event, data);
-  }
-
-  public getOnlineUsersCount(): number {
-    return this.onlineUsers.size;
-  }
-
-  public isUserOnlineStatus(userId: string): boolean {
+  public isUserOnline(userId: string): boolean {
     return this.onlineUsers.has(userId);
   }
-  */
+
+  public getOnlineUsers(): OnlineUser[] {
+    return Array.from(this.onlineUsers.values());
+  }
+
+  public sendToUser(userId: string, event: string, data: any) {
+    const user = this.onlineUsers.get(userId);
+    if (user) {
+      this.io.to(user.socketId).emit(event, data);
+    }
+  }
+
+  public broadcastToConversation(conversationId: string, event: string, data: any) {
+    this.io.to(`conversation_${conversationId}`).emit(event, data);
   }
 }
 
 // Singleton instance
 let realtimeService: RealtimeService | null = null;
 
-export function initializeRealtimeService(): RealtimeService {
+export function initializeRealtimeService(server?: HTTPServer): RealtimeService {
   if (!realtimeService) {
-    realtimeService = new RealtimeService();
+    if (!server) {
+      throw new Error('Server instance is required for first initialization');
+    }
+    realtimeService = new RealtimeService(server);
   }
   return realtimeService;
 }

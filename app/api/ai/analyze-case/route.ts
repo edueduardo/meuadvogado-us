@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
 
     // 🎯 ANÁLISE REAL COM CLAUDE AI - Dados formatados corretamente
     const formattedCaseData = {
+      caseId: caseData.id,
       description: caseData.description || "Descrição do caso",
       category: caseData.practiceArea?.name || "Geral",
       urgency: "medium",
@@ -55,17 +56,7 @@ export async function POST(req: NextRequest) {
       } : undefined,
     };
 
-    const [analysis, outcomePrediction] = await Promise.all([
-      // Análise completa do caso
-      legalAIService.analyzeCase(formattedCaseData),
-      
-      // Predição de sucesso baseada em dados reais
-      legalAIService.predictCaseOutcome(formattedCaseData, {
-        lawyerExperience: user.role === "LAWYER" ? 5 : 0,
-        jurisdiction: caseData.contactState || "Unknown",
-        caseComplexity: "medium",
-      }),
-    ]);
+    const analysis = await legalAIService.analyzeCase(formattedCaseData.caseId, user.id);
 
     // Sugestões de documentos (método não existe - temporário)
     const documentSuggestions = ["Contrato de honorários", "Documentos pessoais", "Comprovação de residência"];
@@ -77,7 +68,7 @@ export async function POST(req: NextRequest) {
         summary: analysis.summary,
         // legalBasis: analysis.legalBasis, // Campo não existe
         recommendedActions: analysis.recommendedActions,
-        successProbability: outcomePrediction.successProbability,
+        successProbability: analysis.successProbability,
         estimatedTimeline: analysis.estimatedTimeline,
         potentialChallenges: analysis.potentialChallenges,
         // requiredDocuments: analysis.requiredDocuments, // Campo não existe
@@ -91,30 +82,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 🎯 TRACKING DE USO DA IA
-    await legalAIService.trackAIUsage(user.id, "case_analysis", 2000); // ~2000 tokens
-
+    // 🎯 TRACKING DE USO DA IA (já é feito automaticamente no service)
     console.log('✅ AI REAL - Análise concluída:', {
       analysisId: savedAnalysis.id,
       caseId: caseData.id,
-      successProbability: outcomePrediction.successProbability,
+      successProbability: analysis.successProbability,
       estimatedTimeline: analysis.estimatedTimeline,
     });
 
     return NextResponse.json({
       analysis: {
         ...savedAnalysis,
-        // Adicionar dados da predição
-        outcomePrediction,
         documentSuggestions,
-        riskFactors: outcomePrediction.factors || [],
-        recommendations: outcomePrediction.recommendations || [],
+        riskFactors: [],
+        recommendations: analysis.recommendedActions,
       },
       _meta: {
         aiModel: "claude-3-5-sonnet-20241022",
         analysisTime: new Date().toISOString(),
         tokensUsed: 2000,
-        confidence: 0.85, // Valor fixo temporário
+        confidence: analysis.successProbability / 100, // Convert to decimal
         serviceUsed: "LegalAIService v1.0",
       }
     });
