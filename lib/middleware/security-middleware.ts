@@ -28,11 +28,11 @@ const SECURITY_CONFIG = {
 
 // Rate limiting avançado
 async function checkRateLimit(
-  identifier: string, 
-  endpoint: string, 
+  endpoint: string,
+  identifier: string,
   ip: string
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
-  const config = SECURITY_CONFIG.RATE_LIMITS[endpoint] || SECURITY_CONFIG.RATE_LIMITS.default;
+  const config = SECURITY_CONFIG.RATE_LIMITS[endpoint as keyof typeof SECURITY_CONFIG.RATE_LIMITS] || SECURITY_CONFIG.RATE_LIMITS.default;
   const key = `rate_limit:${endpoint}:${identifier}`;
   
   const current = await redis.incr(key);
@@ -111,7 +111,7 @@ function analyzeUserAgent(userAgent: string): { suspicious: boolean; threats: st
 
 // Validação de payload
 function validatePayload(body: string): { valid: boolean; threats: string[] } {
-  const threats: string[] [];
+  const threats: string[] = [];
   
   // Verificar tamanho
   if (body.length > SECURITY_CONFIG.MAX_PAYLOAD_SIZE) {
@@ -193,8 +193,8 @@ async function logSecurityEvent(event: string, data: any) {
 
 // Middleware principal
 export async function securityMiddleware(request: NextRequest): Promise<NextResponse | null> {
-  const ip = request.ip || 
-    request.headers.get('x-forwarded-for')?.split(',')[0] || 
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+    request.headers.get('x-real-ip') || 
     'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const url = request.url;
@@ -241,7 +241,7 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
       
       const response = new NextResponse('Too Many Requests', { status: 429 });
       response.headers.set('Retry-After', Math.ceil((rateCheck.resetTime - Date.now()) / 1000).toString());
-      response.headers.set('X-RateLimit-Limit', SECURITY_CONFIG.RATE_LIMITS[endpoint]?.requests.toString() || '100');
+      response.headers.set('X-RateLimit-Limit', SECURITY_CONFIG.RATE_LIMITS[endpoint as keyof typeof SECURITY_CONFIG.RATE_LIMITS]?.requests.toString() || '100');
       response.headers.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
       response.headers.set('X-RateLimit-Reset', rateCheck.resetTime.toString());
       
@@ -269,11 +269,10 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
     return setSecurityHeaders(response);
     
   } catch (error) {
-    console.error('Security middleware error:', error);
     await logSecurityEvent('MIDDLEWARE_ERROR', { 
       ip, 
       url, 
-      error: error.message 
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     
     // Em caso de erro no middleware, permitir request mas logar
@@ -293,11 +292,11 @@ export async function unblockIP(ip: string): Promise<void> {
 
 export async function getSecurityStats(): Promise<any> {
   const logs = await redis.lrange('security_logs', 0, -1);
-  const stats = {
+  const stats: any = {
     totalEvents: logs.length,
     eventsByType: {},
     topBlockedIPs: {},
-    recentEvents: logs.slice(-10).map(JSON.parse)
+    recentEvents: logs.slice(-10).map(log => JSON.parse(log))
   };
   
   for (const log of logs) {

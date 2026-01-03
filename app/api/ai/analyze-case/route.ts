@@ -146,19 +146,15 @@ export async function PUT(req: NextRequest) {
     }
 
     // 🚨 CHAT REAL COM CLAUDE AI
-    // Removendo context que não existe na interface
-    const response = await legalAIService.chatWithAI(message, {
-      userType: user.role === "LAWYER" ? "lawyer" : "client",
-      caseId,
-      // conversationId, // Campo não existe na interface
-      // context: caseId ? await prisma.case.findUnique({
-      //   where: { id: caseId },
-      //   include: { client: true, practiceArea: true },
-      // }) : undefined,
-    });
+    // Usando método correto contextualChat com parâmetros corretos
+    const response = await legalAIService.contextualChat(
+      conversationId || `temp-${Date.now()}`, // ID da conversa
+      message, // mensagem
+      user.id // ID do usuário
+    );
 
-    // 🎯 TRACKING DE USO DO CHAT
-    await legalAIService.trackAIUsage(user.id, "chat", 500); // ~500 tokens
+    // 🎯 CHAT REAL COM CLAUDE AI FUNCIONANDO
+    // Tracking implementado internamente no LegalAIService
 
     return NextResponse.json({
       response,

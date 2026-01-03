@@ -98,7 +98,7 @@ export async function verifyToken(token: string): Promise<any> {
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user) {
       return null;
     }
 
