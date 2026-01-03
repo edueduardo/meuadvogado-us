@@ -31,7 +31,7 @@ export interface SubscriptionPlan {
 
 export class PaymentService {
   // Planos reais com preços competitivos
-  private plans: Record<string, SubscriptionPlan> = {
+  public plans: Record<string, SubscriptionPlan> = {
     basic: {
       id: 'basic',
       name: 'Basic',
