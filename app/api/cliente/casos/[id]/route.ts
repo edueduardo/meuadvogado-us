@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
-    const caseId = params.id
+    const { id: caseId } = await params
 
     // Buscar o caso com todas as informações relacionadas
     const caseData = await prisma.case.findUnique({
@@ -35,27 +35,17 @@ export async function GET(
             },
           },
         },
-        matches: {
-          include: {
-            lawyer: {
-              include: {
-                user: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: {
-            score: 'desc',
-          },
-        },
+        practiceArea: true,
+        analysis: true,
       },
     })
 
     if (!caseData) {
       return NextResponse.json({ error: 'Caso não encontrado' }, { status: 404 })
+    }
+
+    if (!caseData.client) {
+      return NextResponse.json({ error: 'Caso sem cliente associado' }, { status: 400 })
     }
 
     // Verificar se o caso pertence ao cliente autenticado
@@ -67,28 +57,12 @@ export async function GET(
     const formattedCase = {
       id: caseData.id,
       description: caseData.description,
-      practiceArea: caseData.practiceArea,
-      city: caseData.city,
-      state: caseData.state,
+      practiceArea: caseData.practiceArea?.name || 'N/A',
+      contactCity: caseData.contactCity,
+      contactState: caseData.contactState,
       status: caseData.status,
-      urgency: caseData.urgency,
       createdAt: caseData.createdAt,
-      aiAnalysis: caseData.aiAnalysis as any,
-      matches: caseData.matches.map((match) => ({
-        id: match.id,
-        score: match.score,
-        lawyer: {
-          id: match.lawyer.id,
-          user: {
-            name: match.lawyer.user.name,
-          },
-          city: match.lawyer.city,
-          state: match.lawyer.state,
-          practiceAreas: match.lawyer.practiceAreas,
-          rating: match.lawyer.rating,
-          reviewCount: match.lawyer.reviewCount,
-        },
-      })),
+      analysis: caseData.analysis,
     }
 
     return NextResponse.json({ case: formattedCase })

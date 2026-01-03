@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { uploadFile } from '@/lib/upload'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,28 +24,16 @@ export async function POST(req: NextRequest) {
     // Upload do arquivo
     const result = await uploadFile(file, 'documents')
 
-    // Salvar no banco de dados
-    const document = await prisma.document.create({
-      data: {
-        name: file.name,
-        url: result.url,
-        type: result.contentType,
-        size: result.size,
-        uploadedById: session.user.id,
-        caseId: caseId || undefined,
-        conversationId: conversationId || undefined,
-      },
-    })
+    // TODO: Salvar no banco de dados após rodar prisma db push
+    // const document = await prisma.document.create(...)
 
     return NextResponse.json({
       success: true,
       document: {
-        id: document.id,
-        name: document.name,
-        url: document.url,
-        type: document.type,
-        size: document.size,
-        createdAt: document.createdAt,
+        name: file.name,
+        url: result.url,
+        type: result.contentType,
+        size: result.size,
       },
     })
   } catch (error: any) {

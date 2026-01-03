@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
-    const leadId = params.id
+    const { id: leadId } = await params
 
     // Buscar o lead (que é um Case) com todas as informações
     const lead = await prisma.case.findUnique({
@@ -34,16 +34,8 @@ export async function GET(
             },
           },
         },
-        matches: {
-          where: {
-            lawyer: {
-              userId: session.user.id,
-            },
-          },
-          include: {
-            lawyer: true,
-          },
-        },
+        practiceArea: true,
+        analysis: true,
       },
     })
 
@@ -52,7 +44,7 @@ export async function GET(
     }
 
     // Verificar se o advogado tem acesso a este lead
-    const hasAccess = lead.matches.length > 0 || lead.practiceArea
+    const hasAccess = lead.practiceArea
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
@@ -65,7 +57,7 @@ export async function GET(
     if (lead.description.length > 100) qualityScore += 20
 
     // +15 se tem cidade e estado
-    if (lead.city && lead.state) qualityScore += 15
+    if (lead.contactCity && lead.contactState) qualityScore += 15
 
     // +15 se tem área específica
     if (lead.practiceArea) qualityScore += 15
@@ -74,21 +66,18 @@ export async function GET(
     const formattedLead = {
       id: lead.id,
       description: lead.description,
-      practiceArea: lead.practiceArea,
-      city: lead.city,
-      state: lead.state,
+      practiceArea: lead.practiceArea?.name || 'N/A',
+      contactCity: lead.contactCity,
+      contactState: lead.contactState,
       status: lead.status,
-      urgency: lead.urgency,
       createdAt: lead.createdAt,
       qualityScore: Math.min(qualityScore, 100),
       client: {
-        user: {
-          name: lead.client.user.name,
-          email: lead.client.user.email,
-        },
-        phone: lead.client.phone,
+        name: lead.client?.user.name || lead.contactName,
+        email: lead.client?.user.email || lead.contactEmail,
+        phone: lead.contactPhone,
       },
-      aiAnalysis: lead.aiAnalysis as any,
+      analysis: lead.analysis,
     }
 
     return NextResponse.json({ lead: formattedLead })
