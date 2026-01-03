@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    // Teste de conexão com o banco
+    await prisma.$queryRaw`SELECT 1`;
+    
     // Contagem real de advogados ativos
     const totalLawyers = await prisma.lawyer.count({
       where: { active: true }
@@ -66,7 +69,8 @@ export async function GET() {
         }, {} as Record<string, number>)
       },
       clients: totalClients,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      database: "connected"
     };
 
     return NextResponse.json(stats);
@@ -76,19 +80,24 @@ export async function GET() {
     // Fallback com dados mockados se o banco falhar
     const fallbackStats = {
       lawyers: {
-        total: 0,
-        verified: 0,
-        cities: 0,
-        states: 0
+        total: 6,
+        verified: 6,
+        cities: 5,
+        states: 5
       },
-      practiceAreas: 0,
+      practiceAreas: 8,
       cases: {
-        total: 0,
-        byStatus: {}
+        total: 3,
+        byStatus: {
+          NEW: 1,
+          ANALYZING: 1,
+          MATCHED: 1
+        }
       },
-      clients: 0,
+      clients: 5,
       lastUpdated: new Date().toISOString(),
-      error: "Database unavailable - showing fallback"
+      database: "fallback - showing demo data",
+      error: "Database unavailable - showing demo data"
     };
 
     return NextResponse.json(fallbackStats);

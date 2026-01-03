@@ -105,18 +105,26 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
-          Não tem conta?{' '}
-          <Link href="/cadastro" className="text-blue-600 hover:underline font-medium">
-            Cadastre-se como advogado
-          </Link>
-        </p>
+        <div className="text-center space-y-4">
+          <p className="text-gray-600">
+            Não tem conta?{' '}
+            <Link href="/cadastro" className="text-blue-600 hover:underline font-medium">
+              Cadastre-se como advogado
+            </Link>
+          </p>
 
-        <p className="text-center mt-4">
-          <Link href="/" className="text-gray-500 hover:text-gray-700 text-sm">
-            ← Voltar para o início
-          </Link>
-        </p>
+          <p>
+            <Link href="/forgot-password" className="text-blue-600 hover:underline text-sm">
+              Esqueceu sua senha?
+            </Link>
+          </p>
+
+          <p>
+            <Link href="/" className="text-gray-500 hover:text-gray-700 text-sm">
+              ← Voltar para o início
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

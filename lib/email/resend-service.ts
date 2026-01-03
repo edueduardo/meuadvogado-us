@@ -447,6 +447,161 @@ export const emailService = {
   },
 
   // Status
+  // Password Reset Email
+  async sendPasswordReset({ to, name, resetUrl, expiresHours }: {
+    to: string;
+    name: string;
+    resetUrl: string;
+    expiresHours: number;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset de Senha - Meu Advogado</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2563eb; color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; background: #f9fafb; }
+          .button { display: inline-block; background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+          .warning { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Reset de Senha</h1>
+            <p>Meu Advogado - Advogados Brasileiros nos EUA</p>
+          </div>
+          
+          <div class="content">
+            <h2>Olá, ${name}!</h2>
+            
+            <p>Recebemos uma solicitação para resetar sua senha. Se você não fez esta solicitação, ignore este email.</p>
+            
+            <div class="warning">
+              <strong>⚠️ Importante:</strong> Este link expirará em ${expiresHours} horas por segurança.
+            </div>
+            
+            <p>Para resetar sua senha, clique no botão abaixo:</p>
+            
+            <a href="${resetUrl}" class="button">Resetar Minha Senha</a>
+            
+            <p>Se o botão não funcionar, copie e cole este link no seu navegador:</p>
+            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 5px;">
+              ${resetUrl}
+            </p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            
+            <p><strong>Por motivos de segurança:</strong></p>
+            <ul style="color: #666;">
+              <li>Nunca compartilhe este link com ninguém</li>
+              <li>O link só pode ser usado uma vez</li>
+              <li>Ele expirará automaticamente após ${expiresHours} horas</li>
+            </ul>
+          </div>
+          
+          <div class="footer">
+            <p>© 2025 Meu Advogado. Todos os direitos reservados.</p>
+            <p>Este é um email automático, não responda.</p>
+            <p>Para suporte, contate: contato@meuadvogado.us</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.send({
+      to,
+      subject: "Reset de Senha - Meu Advogado",
+      html,
+      text: `Olá ${name},\n\nPara resetar sua senha, acesse: ${resetUrl}\n\nEste link expira em ${expiresHours} horas.\n\nSe você não solicitou, ignore este email.`
+    });
+  },
+
+  // Password Reset Confirmation Email
+  async sendPasswordResetConfirmation({ to, name }: {
+    to: string;
+    name: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Senha Alterada - Meu Advogado</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #10b981; color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; background: #f9fafb; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+          .success { background: #d1fae5; border: 1px solid #10b981; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Senha Alterada com Sucesso!</h1>
+            <p>Meu Advogado - Advogados Brasileiros nos EUA</p>
+          </div>
+          
+          <div class="content">
+            <h2>Olá, ${name}!</h2>
+            
+            <div class="success">
+              <strong>✅ Sua senha foi alterada com sucesso!</strong>
+            </div>
+            
+            <p>Sua senha foi atualizada em nosso sistema e você já pode fazer login com suas novas credenciais.</p>
+            
+            <p><strong>Próximos passos:</strong></p>
+            <ol>
+              <li>Faça login com sua nova senha</li>
+              <li>Verifique suas informações de perfil</li>
+              <li>Se necessário, atualize seus dados de contato</li>
+            </ol>
+            
+            <p style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/login" style="display: inline-block; background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px;">
+                Fazer Login Agora
+              </a>
+            </p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            
+            <p><strong>🔐 Dicas de segurança:</strong></p>
+            <ul style="color: #666;">
+              <li>Use senhas fortes e únicas</li>
+              <li>Não compartilhe suas credenciais</li>
+              <li>Ative a autenticação de dois fatores quando disponível</li>
+            </ul>
+          </div>
+          
+          <div class="footer">
+            <p>© 2025 Meu Advogado. Todos os direitos reservados.</p>
+            <p>Este é um email automático, não responda.</p>
+            <p>Para suporte, contate: contato@meuadvogado.us</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.send({
+      to,
+      subject: "Senha Alterada com Sucesso - Meu Advogado",
+      html,
+      text: `Olá ${name},\n\nSua senha foi alterada com sucesso!\n\nVocê já pode fazer login com suas novas credenciais.\n\nPara sua segurança, se você não fez esta alteração, contate-nos imediatamente.`
+    });
+  },
+
   isConfigured(): boolean {
     return RESEND_API_KEY !== undefined;
   },
