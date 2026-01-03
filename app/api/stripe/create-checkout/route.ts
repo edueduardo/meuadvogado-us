@@ -6,6 +6,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Stripe não configurado. Adicione STRIPE_SECRET_KEY nas variáveis de ambiente." },
+        { status: 500 }
+      );
+    }
+
     const user = await getCurrentUser();
     if (!user || user.role !== "LAWYER") {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });

@@ -1,14 +1,15 @@
 // lib/stripe.ts
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY is not set");
-}
+// Permitir build sem STRIPE_SECRET_KEY (será necessário em runtime)
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || "";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-02-24.acacia",
-  typescript: true,
-});
+export const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2025-02-24.acacia",
+      typescript: true,
+    })
+  : null;
 
 export const STRIPE_PLANS = {
   PREMIUM_MONTHLY: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || "",
