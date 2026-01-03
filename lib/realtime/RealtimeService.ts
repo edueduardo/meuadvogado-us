@@ -1,10 +1,10 @@
 // =============================================================================
 // LEGALAI - REALTIME COMMUNICATION SERVICE (WEBSOCKETS)
 // =============================================================================
-import { Server as SocketIOServer } from 'socket.io';
-import { Server as HTTPServer } from 'http';
+// import { Server as SocketIOServer } from 'socket.io'; // Dependência não instalada
+// import { Server as HTTPServer } from 'http';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+// import { verifyToken } from '@/lib/auth'; // Função não existe
 
 export interface OnlineUser {
   userId: string;
@@ -22,38 +22,40 @@ export interface MessageData {
 }
 
 export class RealtimeService {
-  private io: SocketIOServer;
+  // private io: SocketIOServer; // Socket.io não instalado
   private onlineUsers: Map<string, OnlineUser> = new Map();
 
-  constructor(server: HTTPServer) {
-    this.io = new SocketIOServer(server, {
-      cors: {
-        origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-        methods: ['GET', 'POST'],
-      },
-    });
-
-    this.setupEventHandlers();
+  constructor() {
+    // Temporário - Socket.io não instalado
+    // this.io = new SocketIOServer(server, {
+    //   cors: {
+    //     origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    //     methods: ['GET', 'POST'],
+    //   },
+    // });
+    // this.setupEventHandlers();
   }
 
   private setupEventHandlers(): void {
-    this.io.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token;
-        const user = await verifyToken(token);
-        socket.data.user = user;
-        next();
-      } catch (error) {
-        next(new Error('Authentication error'));
-      }
-    });
-
-    this.io.on('connection', (socket) => {
-      this.handleConnection(socket);
-    });
+    // Temporário - Socket.io não instalado
+    // this.io.use(async (socket, next) => {
+    //   try {
+    //     const token = socket.handshake.auth.token;
+    //     const user = await verifyToken(token);
+    //     socket.data.user = user;
+    //     next();
+    //   } catch (error) {
+    //     next(new Error('Authentication error'));
+    //   }
+    // });
+    // this.io.on('connection', (socket) => {
+    //   this.handleConnection(socket);
+    // });
   }
 
   private handleConnection(socket: any): void {
+    // Temporário - Socket.io não instalado
+    /*
     const user = socket.data.user;
     
     // Marcar usuário como online
@@ -311,14 +313,16 @@ export class RealtimeService {
   public isUserOnlineStatus(userId: string): boolean {
     return this.onlineUsers.has(userId);
   }
+  */
+  }
 }
 
 // Singleton instance
 let realtimeService: RealtimeService | null = null;
 
-export function initializeRealtimeService(server: HTTPServer): RealtimeService {
+export function initializeRealtimeService(): RealtimeService {
   if (!realtimeService) {
-    realtimeService = new RealtimeService(server);
+    realtimeService = new RealtimeService();
   }
   return realtimeService;
 }

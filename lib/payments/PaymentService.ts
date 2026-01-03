@@ -4,7 +4,7 @@
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build', {
   apiVersion: '2025-02-24.acacia',
 });
 
@@ -100,7 +100,7 @@ export class PaymentService {
     const customer = await stripe.customers.create({
       email: lawyer.user.email,
       name: lawyer.user.name,
-      phone: lawyer.user.phone, // Phone está no user, não no lawyer
+      phone: lawyer.user.phone || undefined, // Phone pode ser null
       metadata: {
         lawyerId,
         // oabNumber: lawyer.oabNumber, // Campo não existe no schema

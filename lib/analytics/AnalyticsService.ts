@@ -181,7 +181,7 @@ export class AnalyticsService {
       bandwidthUsed,
     ] = await Promise.all([
       this.getUptime(),
-      this.getAvgResponseTime(),
+      this.getSystemAvgResponseTime(),
       this.getErrorRate(),
       this.getActiveConnections(),
       this.getDatabaseConnections(),
@@ -446,20 +446,20 @@ export class AnalyticsService {
   // Placeholder methods for complex analytics
   private async getWonCases(lawyerId: string): Promise<number> {
     return prisma.case.count({
-      where: { lawyerId, status: 'CONVERTED' },
+      where: { matchedLawyerId: lawyerId, status: 'CONVERTED' },
     });
   }
 
   private async getLostCases(lawyerId: string): Promise<number> {
     return prisma.case.count({
-      where: { lawyerId, status: 'CLOSED' },
+      where: { matchedLawyerId: lawyerId, status: 'CLOSED' },
     });
   }
 
   private async getPendingCases(lawyerId: string): Promise<number> {
     return prisma.case.count({
       where: { 
-        lawyerId, 
+        matchedLawyerId: lawyerId, 
         status: { in: ['NEW', 'ANALYZING', 'ANALYZED', 'MATCHED', 'CONTACTED'] },
       },
     });
@@ -495,7 +495,7 @@ export class AnalyticsService {
     return 99.9;
   }
 
-  private async getAvgResponseTime(): Promise<number> {
+  private async getSystemAvgResponseTime(): Promise<number> {
     return 150; // ms
   }
 

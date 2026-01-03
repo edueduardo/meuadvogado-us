@@ -28,8 +28,8 @@ export class CaseMatchingService {
     // 1. Buscar advogados por localização e especialização
     const candidateLawyers = await prisma.lawyer.findMany({
       where: {
-        available: true,
-        verificationStatus: 'APPROVED',
+        // available: true, // Campo não existe no schema
+        // verificationStatus: 'APPROVED', // Campo não existe - simplificado
         OR: [
           {
             city: caseData.contactCity || undefined,

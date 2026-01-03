@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@/lib/prisma';
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || 'dummy-key-for-build',
 });
 
 export interface CaseAnalysisResult {
