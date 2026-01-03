@@ -3,11 +3,12 @@
 // =============================================================================
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
-import Redis from 'ioredis';
+import { redisService } from '@/lib/redis/upstash-redis';
+import { emailService } from '@/lib/email/resend-service';
 import { validateSession } from '@/lib/auth/enterprise-auth';
+import * as Sentry from '@sentry/nextjs';
 
-// Redis para cache e filas
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Redis Upstash para cache e filas (já configurado no redisService)
 
 // Stripe configurado
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -217,7 +218,7 @@ export class EnterpriseStripeService {
       console.log(`✅ Subscription created: ${subscription.id} for lawyer: ${lawyer.id}`);
 
       // Enviar email de boas-vindas
-      await this.sendWelcomeEmail(lawyer.user.email, plan.name, trialDays > 0);
+      await this.sendWelcomeEmail(lawyer.user.email, lawyer.user.name, plan.name, trialDays > 0);
 
       return subscription;
 
@@ -261,7 +262,9 @@ export class EnterpriseStripeService {
         });
 
         if (lawyer) {
-          await this.sendPlanUpdateEmail(lawyer.user.email, newPlan.name);
+          const oldPlanType = subscription.metadata.planType || 'FREE';
+          const oldPlan = SUBSCRIPTION_PLANS[oldPlanType as keyof typeof SUBSCRIPTION_PLANS]?.name || oldPlanType;
+          await this.sendPlanUpdateEmail(lawyer.user.email, lawyer.user.name, oldPlan, newPlan.name);
         }
       }
 
@@ -309,7 +312,8 @@ export class EnterpriseStripeService {
         });
 
         if (lawyer) {
-          await this.sendCancellationEmail(lawyer.user.email, immediate);
+          const endDate = immediate ? undefined : new Date(canceledSubscription.current_period_end * 1000);
+          await this.sendCancellationEmail(lawyer.user.email, lawyer.user.name, immediate, endDate);
         }
       }
 
@@ -447,7 +451,7 @@ export class EnterpriseStripeService {
         });
 
         if (lawyer) {
-          await this.sendRefundEmail(lawyer.user.email, refund.amount / 100);
+          await this.sendRefundEmail(lawyer.user.email, lawyer.user.name, refund.amount || 0, reason);
         }
       }
 
@@ -503,8 +507,18 @@ export class EnterpriseStripeService {
 
   // Handlers específicos de webhook
   private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
-    console.log(`✅ Invoice payment succeeded: ${invoice.id}`);
-    // Implementar notificação se necessário
+    try {
+      // Atualizar subscription no Prisma
+      await prisma.subscription.updateMany({
+        where: { stripeId: invoice.subscription as string },
+        data: { status: 'active' }
+      });
+      
+      console.log(`✅ Invoice payment succeeded: ${invoice.id}`);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { webhook: 'invoice_payment_succeeded' } });
+      console.error('Failed to handle invoice payment succeeded:', error);
+    }
   }
 
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
@@ -513,13 +527,55 @@ export class EnterpriseStripeService {
   }
 
   private async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
-    console.log(`✅ Subscription updated: ${stripeSubscription.id}`);
-    // Implementar atualização se necessário
+    try {
+      await prisma.subscription.upsert({
+        where: { stripeId: stripeSubscription.id },
+        update: {
+          status: stripeSubscription.status,
+          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+          updatedAt: new Date()
+        },
+        create: {
+          lawyerId: stripeSubscription.metadata.lawyerId,
+          stripeId: stripeSubscription.id,
+          stripeCustomerId: stripeSubscription.customer as string,
+          stripePriceId: stripeSubscription.items.data[0]?.price.id,
+          status: stripeSubscription.status,
+          planType: stripeSubscription.metadata.planType || 'PREMIUM',
+          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+          trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
+        }
+      });
+      
+      console.log(`✅ Subscription updated: ${stripeSubscription.id}`);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { webhook: 'subscription_updated' } });
+      console.error('Failed to handle subscription updated:', error);
+    }
   }
 
   private async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
-    console.log(`❌ Subscription deleted: ${stripeSubscription.id}`);
-    // Implementar cancelamento se necessário
+    try {
+      await prisma.subscription.update({
+        where: { stripeId: stripeSubscription.id },
+        data: {
+          status: 'canceled',
+          canceledAt: new Date(),
+          cancelReason: stripeSubscription.cancellation_details?.reason || 'unknown',
+          updatedAt: new Date()
+        }
+      });
+      
+      console.log(`❌ Subscription deleted: ${stripeSubscription.id}`);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { webhook: 'subscription_deleted' } });
+      console.error('Failed to handle subscription deleted:', error);
+    }
   }
 
   private async handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
@@ -574,35 +630,59 @@ export class EnterpriseStripeService {
     // Implementar com Redis/Bull queue na produção
   }
 
-  // Métodos de email (simulados)
-  private async sendWelcomeEmail(email: string, planName: string, hasTrial: boolean): Promise<void> {
-    console.log(`📧 Welcome email sent to ${email} - Plan: ${planName}, Trial: ${hasTrial}`);
-    // Implementar com SendGrid/SES na produção
+  // Email REAL com Resend
+  private async sendWelcomeEmail(email: string, name: string, planName: string, hasTrial: boolean): Promise<void> {
+    try {
+      await emailService.sendWelcome(email, name, planName, hasTrial);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'welcome' } });
+      console.error('Failed to send welcome email:', error);
+    }
   }
 
-  private async sendPlanUpdateEmail(email: string, newPlanName: string): Promise<void> {
-    console.log(`📧 Plan update email sent to ${email} - New plan: ${newPlanName}`);
-    // Implementar com SendGrid/SES na produção
+  private async sendPlanUpdateEmail(email: string, name: string, oldPlan: string, newPlan: string): Promise<void> {
+    try {
+      await emailService.sendPlanUpdate(email, name, oldPlan, newPlan);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'plan_update' } });
+      console.error('Failed to send plan update email:', error);
+    }
   }
 
-  private async sendCancellationEmail(email: string, immediate: boolean): Promise<void> {
-    console.log(`📧 Cancellation email sent to ${email} - Immediate: ${immediate}`);
-    // Implementar com SendGrid/SES na produção
+  private async sendCancellationEmail(email: string, name: string, immediate: boolean, endDate?: Date): Promise<void> {
+    try {
+      await emailService.sendCancellation(email, name, immediate, endDate);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'cancellation' } });
+      console.error('Failed to send cancellation email:', error);
+    }
   }
 
-  private async sendPaymentConfirmationEmail(email: string, amount: number, currency: string): Promise<void> {
-    console.log(`📧 Payment confirmation sent to ${email} - Amount: ${amount} ${currency}`);
-    // Implementar com SendGrid/SES na produção
+  private async sendPaymentConfirmationEmail(email: string, name: string, amount: number, currency: string): Promise<void> {
+    try {
+      await emailService.sendPaymentConfirmation(email, name, amount, currency);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'payment_confirmation' } });
+      console.error('Failed to send payment confirmation email:', error);
+    }
   }
 
-  private async sendPaymentFailedEmail(email: string, amount: number): Promise<void> {
-    console.log(`📧 Payment failed email sent to ${email} - Amount: ${amount}`);
-    // Implementar com SendGrid/SES na produção
+  private async sendPaymentFailedEmail(email: string, name: string, amount: number, reason?: string): Promise<void> {
+    try {
+      await emailService.sendPaymentFailed(email, name, amount, reason);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'payment_failed' } });
+      console.error('Failed to send payment failed email:', error);
+    }
   }
 
-  private async sendRefundEmail(email: string, amount: number): Promise<void> {
-    console.log(`📧 Refund email sent to ${email} - Amount: ${amount}`);
-    // Implementar com SendGrid/SES na produção
+  private async sendRefundEmail(email: string, name: string, amount: number, reason?: string): Promise<void> {
+    try {
+      await emailService.sendRefund(email, name, amount, reason);
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'email', type: 'refund' } });
+      console.error('Failed to send refund email:', error);
+    }
   }
 
   private async autoRespondToDispute(dispute: Stripe.Dispute): Promise<void> {
@@ -616,9 +696,38 @@ export class EnterpriseStripeService {
   }
 
   public async getSubscriptionStatus(lawyerId: string): Promise<any> {
-    console.log(`📋 Getting subscription status for lawyer: ${lawyerId}`);
-    // Implementar consulta ao Stripe diretamente ou cache Redis
-    return { status: 'NO_SUBSCRIPTION' };
+    try {
+      // Buscar subscription ativa no Prisma
+      const subscription = await prisma.subscription.findFirst({
+        where: { 
+          lawyerId,
+          status: { in: ['active', 'trialing', 'past_due'] }
+        },
+        include: {
+          lawyer: {
+            include: { user: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (!subscription) {
+        return { status: 'NO_SUBSCRIPTION' };
+      }
+
+      return {
+        status: subscription.status,
+        planType: subscription.planType,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        trialEnd: subscription.trialEnd,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        stripeId: subscription.stripeId,
+      };
+    } catch (error) {
+      Sentry.captureException(error, { tags: { service: 'subscription', method: 'getStatus' } });
+      console.error('Failed to get subscription status:', error);
+      return { status: 'ERROR' };
+    }
   }
 
   public async getPaymentHistory(lawyerId: string, limit: number = 50): Promise<any[]> {

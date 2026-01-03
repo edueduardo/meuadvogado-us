@@ -149,6 +149,7 @@ model Lawyer {
   cases           Case[]
   reviews         Review[]
   payments        Payment[]
+  subscriptions   Subscription[]
   verification    LawyerVerification?
   conversations   Conversation[]
   leadPurchases   LeadPurchase[]
@@ -570,4 +571,50 @@ model Document {
   @@index([uploadedById])
   @@index([caseId])
   @@index([conversationId])
+}
+
+// =============================================================================
+// SUBSCRIPTIONS (STRIPE BILLING REAL)
+// =============================================================================
+
+model Subscription {
+  id                  String   @id @default(cuid())
+  
+  // Advogado
+  lawyer              Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId            String
+  
+  // Stripe
+  stripeId            String   @unique
+  stripeCustomerId    String
+  stripePriceId       String?
+  
+  // Plano
+  status              String   // active, trialing, past_due, canceled, unpaid
+  planType            String   // FREE, PREMIUM, FEATURED
+  
+  // Período
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean  @default(false)
+  
+  // Trial
+  trialStart          DateTime?
+  trialEnd            DateTime?
+  
+  // Cancelamento
+  canceledAt          DateTime?
+  cancelReason        String?
+  
+  // Metadata
+  metadata            Json?
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([lawyerId])
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@index([currentPeriodEnd])
 }
