@@ -1,0 +1,170 @@
+# =============================================================================
+# ENTERPRISE KUBERNETES DEPLOYMENT - PRODUCTION READY
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meuadvogado-app
+  namespace: meuadvogado
+  labels:
+    app: meuadvogado-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: meuadvogado-app
+  template:
+    metadata:
+      labels:
+        app: meuadvogado-app
+    spec:
+      containers:
+      - name: meuadvogado
+        image: meuadvogado/app:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXTAUTH_URL
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: NEXTAUTH_URL
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: NEXTAUTH_SECRET
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: REDIS_URL
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: STRIPE_SECRET_KEY
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: meuadvogado-secrets
+              key: ANTHROPIC_API_KEY
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: meuadvogado-uploads-pvc
+      imagePullSecrets:
+      - name: registry-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meuadvogado-service
+  namespace: meuadvogado
+spec:
+  selector:
+    app: meuadvogado-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meuadvogado-ingress
+  namespace: meuadvogado
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - seu-dominio.com
+    secretName: meuadvogado-tls
+  rules:
+  - host: seu-dominio.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: meuadvogado-service
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meuadvogado-uploads-pvc
+  namespace: meuadvogado
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: meuadvogado-hpa
+  namespace: meuadvogado
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: meuadvogado-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

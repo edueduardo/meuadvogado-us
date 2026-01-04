@@ -1,0 +1,101 @@
+/**
+ * SCHEMA ADICIONAL - SISTEMA DE CRÉDITOS
+ * 
+ * Modelos para gerenciar créditos de advogados
+ * - CreditBalance: saldo atual de créditos
+ * - CreditTransaction: histórico de transações
+ * - CreditPackage: pacotes de créditos disponíveis
+ */
+
+model CreditBalance {
+  id        String   @id @default(cuid())
+  lawyerId  String   @unique
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Saldo atual
+  credits   Int      @default(0)
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  metadata  Json?
+  
+  @@index([lawyerId])
+  @@index([credits])
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  lawyerId    String
+  lawyer      Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Detalhes da transação
+  type        String   // 'PURCHASE', 'CONSUME', 'REFUND', 'BONUS', 'EXPIRE'
+  amount      Int      // positivo para adicionar, negativo para consumir
+  balance     Int      // saldo após transação
+  
+  // Referência externa
+  stripePaymentIntentId? String
+  packageId?            String
+  leadId?               String // se consumido por lead
+  
+  // Descrição e metadata
+  description String
+  metadata    Json?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime? // para créditos com validade
+  
+  @@index([lawyerId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([stripePaymentIntentId])
+}
+
+model CreditPackage {
+  id          String   @id @default(cuid())
+  
+  // Detalhes do pacote
+  name        String
+  description String
+  credits     Int      // quantidade de créditos
+  price       Int      // preço em centavos (BRL)
+  currency    String   @default("brl")
+  
+  // Marketing e validade
+  popular     Boolean  @default(false)
+  active      Boolean  @default(true)
+  validFor    Int?     // dias de validade dos créditos
+  bonus       Int      @default(0) // créditos bônus
+  
+  // Metadata
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([active])
+  @@index([price])
+  @@index([credits])
+}
+
+model CreditUsage {
+  id        String   @id @default(cuid())
+  lawyerId  String
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Consumo de crédito
+  leadId    String
+  lead      Case     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  // Detalhes
+  credits   Int      @default(1) // créditos consumidos
+  reason    String   @default("Lead acceptance")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@unique([lawyerId, leadId]) // um lead só pode ser consumido uma vez por advogado
+  @@index([lawyerId])
+  @@index([leadId])
+  @@index([createdAt])
+}

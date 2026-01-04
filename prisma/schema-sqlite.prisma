@@ -1,0 +1,381 @@
+// =============================================================================
+// LEGALAI - SCHEMA SQLITE (TEMPORÁRIO PARA TESTE)
+// =============================================================================
+
+datasource db {
+  provider  = "sqlite"
+  url       = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+enum LawyerPlan {
+  FREE
+  PREMIUM
+  FEATURED
+}
+
+enum CaseStatus {
+  NEW
+  ANALYZING
+  ANALYZED
+  MATCHED
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum CaseUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+// =============================================================================
+// USUÁRIOS
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  photo         String?
+  role          UserRole  @default(CLIENT)
+  
+  // Relações
+  lawyer        Lawyer?
+  client        Client?
+  
+  // Auth
+  emailVerified DateTime?
+  
+  // COMPLIANCE (GDPR/CCPA)
+  consentGiven       Boolean   @default(false)
+  consentDate        DateTime?
+  marketingConsent   Boolean   @default(false)
+  dataRetentionUntil DateTime?
+  deletionRequested  Boolean   @default(false)
+  deletionRequestedAt DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+// =============================================================================
+// ADVOGADOS
+// =============================================================================
+
+model Lawyer {
+  id                   String              @id @default(cuid())
+  userId               String              @unique
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Informações profissionais
+  oabNumber            String              @unique
+  oabState             String
+  specialization       String?
+  experience           String?
+  education            String?
+  firm                 String?
+  
+  // Localização
+  city                 String
+  state                String
+  
+  // Contato
+  phone                String?
+  website              String?
+  
+  // Planos e verificação
+  plan                 LawyerPlan          @default(FREE)
+  verificationStatus   VerificationStatus @default(PENDING)
+  verifiedAt           DateTime?
+  
+  // Avaliações
+  rating               Float               @default(0)
+  reviewCount          Int                 @default(0)
+  
+  // Configurações
+  available            Boolean             @default(true)
+  consultationFee      Float?
+  languages            String[]
+  practiceAreas        String[]
+  
+  // Stripe
+  stripeCustomerId     String?
+  subscriptionId       String?
+  subscriptionStatus   String?
+  subscriptionEndsAt   DateTime?
+  
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  
+  // Relações
+  cases                Case[]
+  conversations        Conversation[]
+  reviews              Review[]
+  payments             Payment[]
+  verification         LawyerVerification?
+  
+  @@index([userId])
+  @@index([oabNumber])
+  @@index([city, state])
+  @@index([plan])
+  @@index([verificationStatus])
+  @@index([rating])
+}
+
+// =============================================================================
+// CLIENTES
+// =============================================================================
+
+model Client {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Informações pessoais
+  phone                String?
+  preferredLanguage    String    @default("pt-BR")
+  
+  // Timestamps
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  // Relações
+  cases                Case[]
+  conversations        Conversation[]
+  reviews              Review[]
+  
+  @@index([userId])
+}
+
+// =============================================================================
+// CASOS
+// =============================================================================
+
+model Case {
+  id                   String      @id @default(cuid())
+  clientId             String?
+  client               Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  
+  // Informações do caso
+  description          String
+  practiceArea         String?
+  contactName          String
+  contactEmail         String?
+  contactPhone         String
+  contactCity          String?
+  contactState         String?
+  urgency              CaseUrgency @default(MEDIUM)
+  status               CaseStatus  @default(NEW)
+  
+  // Análise IA
+  analysis             String?
+  aiScore              Float?
+  
+  // Verificação
+  emailVerified        Boolean     @default(false)
+  phoneVerified        Boolean     @default(false)
+  
+  // Timestamps
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  
+  // Relações
+  conversations        Conversation[]
+  documents            Document[]
+  
+  @@index([clientId])
+  @@index([status])
+  @@index([practiceArea])
+  @@index([contactCity, contactState])
+  @@index([urgency])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// CONVERSAS
+// =============================================================================
+
+model Conversation {
+  id                   String              @id @default(cuid())
+  lawyerId             String
+  lawyer               Lawyer              @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  clientId             String?
+  client               Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  caseId               String?
+  case                 Case?               @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  
+  // Status
+  status               ConversationStatus  @default(ACTIVE)
+  
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  
+  // Relações
+  messages             Message[]
+  
+  @@index([lawyerId])
+  @@index([clientId])
+  @@index([caseId])
+  @@index([status])
+}
+
+// =============================================================================
+// MENSAGENS
+// =============================================================================
+
+model Message {
+  id                   String    @id @default(cuid())
+  conversationId       String
+  conversation         Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId             String
+  content              String
+  isRead               Boolean   @default(false)
+  
+  // Timestamps
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// AVALIAÇÕES
+// =============================================================================
+
+model Review {
+  id                   String    @id @default(cuid())
+  lawyerId             String
+  lawyer               Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Avaliação
+  rating               Int       // 1-5
+  comment              String?
+  
+  // Verificação
+  verified             Boolean   @default(false)
+  
+  // Timestamps
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  @@unique([lawyerId, clientId])
+  @@index([lawyerId])
+  @@index([clientId])
+  @@index([rating])
+}
+
+// =============================================================================
+// PAGAMENTOS
+// =============================================================================
+
+model Payment {
+  id                   String    @id @default(cuid())
+  lawyerId             String
+  lawyer               Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Stripe
+  stripePaymentId      String    @unique
+  stripeCheckoutId     String?
+  amount               Float
+  currency             String    @default("usd")
+  status               String
+  
+  // Detalhes
+  plan                 LawyerPlan
+  interval             String    // "month" or "year"
+  
+  // Timestamps
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  @@index([lawyerId])
+  @@index([stripePaymentId])
+  @@index([status])
+}
+
+// =============================================================================
+// VERIFICAÇÃO DE ADVOGADOS
+// =============================================================================
+
+model LawyerVerification {
+  id                   String              @id @default(cuid())
+  lawyerId             String              @unique
+  lawyer               Lawyer              @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  
+  // Documentos
+  oabDocumentUrl       String?
+  identificationUrl    String?
+  
+  // Status
+  status               VerificationStatus @default(PENDING)
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  rejectionReason      String?
+  
+  // Timestamps
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  
+  @@index([lawyerId])
+  @@index([status])
+}
+
+// =============================================================================
+// DOCUMENTOS
+// =============================================================================
+
+model Document {
+  id              String    @id @default(cuid())
+  name            String
+  url             String
+  type            String
+  size            Int
+  uploadedById    String
+  caseId          String?
+  conversationId  String?
+  createdAt       DateTime  @default(now())
+  
+  @@index([uploadedById])
+  @@index([caseId])
+  @@index([conversationId])
+}
