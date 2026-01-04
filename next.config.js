@@ -10,8 +10,6 @@ const nextConfig = {
   // Otimizações para produção
   poweredByHeader: false,
   compress: true,
-  // Configuração para Socket.IO em produção
-  serverExternalPackages: ['socket.io'],
   // Headers de segurança
   async headers() {
     return [
