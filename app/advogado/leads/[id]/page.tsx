@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Lead {
   id: string
@@ -81,9 +82,10 @@ export default function LeadDetailPage() {
         throw new Error(data.error || 'Erro ao aceitar lead')
       }
 
+      toast.success('Lead aceito com sucesso! Redirecionando para o chat...')
       router.push('/chat')
     } catch (err: any) {
-      alert(err.message || 'Erro ao aceitar lead')
+      toast.error(err.message || 'Erro ao aceitar lead')
     } finally {
       setAccepting(false)
     }

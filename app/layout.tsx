@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Header from './components/Header'
+import ToastProvider from './components/ToastProvider'
 
 export const metadata: Metadata = {
   title: 'Meu Advogado - Advogados Brasileiros nos EUA',
@@ -17,6 +18,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className="antialiased">
         <Providers>
+          <ToastProvider />
           <Header />
           {children}
         </Providers>

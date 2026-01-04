@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 export default function PlanosPage() {
   const { data: session } = useSession()
@@ -27,11 +28,14 @@ export default function PlanosPage() {
 
       const data = await res.json()
       if (data.url) {
+        toast.success('Redirecionando para o pagamento...')
         window.location.href = data.url
+      } else {
+        toast.error('Erro ao criar checkout. Tente novamente.')
       }
     } catch (error) {
       console.error('Error creating checkout:', error)
-      alert('Erro ao criar checkout. Tente novamente.')
+      toast.error('Erro ao criar checkout. Tente novamente.')
     } finally {
       setLoading(null)
     }
