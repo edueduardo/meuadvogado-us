@@ -30,8 +30,8 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Desktop Auth Buttons - DOIS BOTÕES SEPARADOS */}
+          <div className="hidden md:flex items-center space-x-3">
             {status === 'loading' ? (
               <div className="animate-pulse h-8 w-20 bg-gray-200 rounded"></div>
             ) : session ? (
@@ -52,16 +52,16 @@ export default function Header() {
             ) : (
               <>
                 <Link 
-                  href="/login"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  href="/login?type=client"
+                  className="text-blue-600 hover:text-blue-700 font-medium px-3 py-2 border border-blue-600 rounded-lg hover:bg-blue-50"
                 >
-                  Entrar
+                  👤 Entrar como Cliente
                 </Link>
                 <Link 
-                  href="/cadastro"
+                  href="/login?type=lawyer"
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                 >
-                  Cadastrar
+                  ⚖️ Entrar como Advogado
                 </Link>
               </>
             )}
@@ -133,18 +133,18 @@ export default function Header() {
                 ) : (
                   <>
                     <Link 
-                      href="/login"
-                      className="text-blue-600 hover:text-blue-700 font-medium block py-2"
+                      href="/login?type=client"
+                      className="text-blue-600 hover:text-blue-700 font-medium px-3 py-2 border border-blue-600 rounded-lg hover:bg-blue-50 block text-center mb-2"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Entrar
+                      👤 Entrar como Cliente
                     </Link>
                     <Link 
-                      href="/cadastro"
+                      href="/login?type=lawyer"
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 block text-center"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Cadastrar
+                      ⚖️ Entrar como Advogado
                     </Link>
                   </>
                 )}

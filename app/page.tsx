@@ -140,7 +140,7 @@ export default function Home() {
         </div>
 
         {/* CTA */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link 
             href="/caso"
             className="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 font-semibold text-lg"
@@ -153,30 +153,6 @@ export default function Home() {
           >
             🔍 Ver Todos os Advogados
           </Link>
-        </div>
-
-        {/* Login/Cadastro CTA */}
-        <div className="bg-blue-50 rounded-xl p-8 max-w-2xl mx-auto">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-            Já tem uma conta?
-          </h3>
-          <p className="text-gray-600 mb-6 text-center">
-            Acesse sua área para conversar com advogados, acompanhar seus casos e muito mais.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/login"
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center"
-            >
-              🔑 Entrar na Minha Conta
-            </Link>
-            <Link 
-              href="/cadastro"
-              className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 font-semibold flex items-center justify-center"
-            >
-              👤 Criar Conta Gratuita
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -425,7 +401,7 @@ export default function Home() {
             <div>
               <h4 className="text-white font-semibold mb-4">Para Clientes</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/login" className="hover:text-white">🔑 Entrar na Conta</Link></li>
+                <li><Link href="/login?type=client" className="hover:text-white">🔑 Entrar como Cliente</Link></li>
                 <li><Link href="/cadastro" className="hover:text-white">👤 Criar Conta</Link></li>
                 <li><Link href="/advogados" className="hover:text-white">Buscar Advogados</Link></li>
                 <li><Link href="/caso" className="hover:text-white">Conte seu Caso</Link></li>
