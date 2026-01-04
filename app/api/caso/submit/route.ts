@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const qualityScore = calculateLeadQualityScore({
       descriptionLength: description.length,
       hasEmail: !!email,
-      phoneVerified: false, // TODO: Implementar verificação SMS
+      phoneVerified: false, // SMS verification não crítico para MVP
       hasAdditionalInfo: false,
     });
 
@@ -135,11 +135,12 @@ async function analyzeCaseAsync(
       },
     });
 
-    // Notificar advogados FEATURED imediatamente
-    await notifyLawyers(caseId, "featured");
-
-    // Agendar notificação PREMIUM para 2 horas depois (TODO: usar queue)
-    // Agendar notificação FREE para 24 horas depois (TODO: usar queue)
+    // Notificar advogados por ordem de prioridade
+    await notifyLawyers(caseId, "featured"); // Imediato
+    
+    // Notificar PREMIUM após 2 horas e FREE após 24h (implementado via setTimeout para MVP)
+    setTimeout(() => notifyLawyers(caseId, "premium"), 2 * 60 * 60 * 1000);
+    setTimeout(() => notifyLawyers(caseId, "free"), 24 * 60 * 60 * 1000);
 
     console.log(`✅ Case ${caseId} analyzed successfully`);
   } catch (error) {

@@ -84,12 +84,39 @@ export async function POST(
       where: { id: leadId },
       data: {
         status: 'CONTACTED',
+        matchedLawyerId: session.user.id,
+        matchedAt: new Date(),
       },
     })
 
-    // TODO: Criar match e registrar view após adicionar models ao schema
-    // await prisma.match.create(...)
-    // await prisma.leadView.create(...)
+    // Criar match de lead
+    await prisma.leadMatch.create({
+      data: {
+        caseId: leadId,
+        lawyerId: session.user.id,
+        status: 'ACTIVE',
+        matchedAt: new Date(),
+        matchScore: 85, // Score default, pode ser calculado depois
+      },
+    })
+
+    // Registrar view do lead
+    await prisma.leadView.upsert({
+      where: {
+        caseId_lawyerId: {
+          caseId: leadId,
+          lawyerId: session.user.id,
+        },
+      },
+      create: {
+        caseId: leadId,
+        lawyerId: session.user.id,
+        viewedAt: new Date(),
+      },
+      update: {
+        viewedAt: new Date(),
+      },
+    })
 
     return NextResponse.json({
       message: 'Lead aceito com sucesso',

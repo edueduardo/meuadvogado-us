@@ -24,16 +24,28 @@ export async function POST(req: NextRequest) {
     // Upload do arquivo
     const result = await uploadFile(file, 'documents')
 
-    // TODO: Salvar no banco de dados após rodar prisma db push
-    // const document = await prisma.document.create(...)
-
-    return NextResponse.json({
-      success: true,
-      document: {
+    // Salvar documento no banco
+    const document = await prisma.document.create({
+      data: {
         name: file.name,
         url: result.url,
         type: result.contentType,
         size: result.size,
+        uploadedById: session.user.id,
+        caseId: caseId || undefined,
+        conversationId: conversationId || undefined,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      document: {
+        id: document.id,
+        name: document.name,
+        url: document.url,
+        type: document.type,
+        size: document.size,
+        createdAt: document.createdAt,
       },
     })
   } catch (error: any) {

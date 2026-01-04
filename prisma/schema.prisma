@@ -155,6 +155,8 @@ model Lawyer {
   verification    LawyerVerification?
   conversations   Conversation[]
   leadPurchases   LeadPurchase[]
+  leadViews       LeadView[]
+  leadMatches     LeadMatch[]
   
   // Timestamps
   createdAt       DateTime    @default(now())
@@ -305,6 +307,8 @@ model Case {
   emailVerified   Boolean     @default(false)
   
   conversations   Conversation[]
+  leadViews       LeadView[]
+  leadMatches     LeadMatch[]
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -643,4 +647,59 @@ model AuditLog {
   @@index([severity])
   @@index([timestamp])
   @@index([timestamp, severity])
+}
+
+// =============================================================================
+// LEAD VIEWS E MATCHES - TRACKING DE ENGAJAMENTO
+// =============================================================================
+
+model LeadView {
+  id        String   @id @default(cuid())
+  
+  // Lead (Case)
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  caseId    String
+  
+  // Advogado que visualizou
+  lawyer    Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId  String
+  
+  // Tracking
+  viewedAt  DateTime @default(now())
+  duration  Int?     // segundos visualizando
+  
+  @@unique([caseId, lawyerId])
+  @@index([lawyerId])
+  @@index([caseId])
+  @@index([viewedAt])
+}
+
+model LeadMatch {
+  id          String   @id @default(cuid())
+  
+  // Lead (Case)
+  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  caseId      String
+  
+  // Advogado que aceitou
+  lawyer      Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId    String
+  
+  // Status do match
+  status      String   @default("ACTIVE") // ACTIVE, CONVERTED, DECLINED, EXPIRED
+  
+  // Match data
+  matchedAt   DateTime @default(now())
+  respondedAt DateTime?
+  convertedAt DateTime?
+  
+  // Score e metadata
+  matchScore  Int?     // 0-100 score do algoritmo
+  metadata    Json?
+  
+  @@unique([caseId, lawyerId])
+  @@index([lawyerId])
+  @@index([caseId])
+  @@index([status])
+  @@index([matchedAt])
 }
