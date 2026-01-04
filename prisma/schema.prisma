@@ -489,6 +489,7 @@ model Review {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  @@unique([clientId, lawyerId])
   @@index([lawyerId, verified])
   @@index([rating])
   @@index([consultationId])
