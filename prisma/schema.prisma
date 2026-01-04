@@ -145,6 +145,8 @@ model Lawyer {
   viewCount       Int         @default(0)
   contactCount    Int         @default(0)
   responseTime    Int?        // Minutos médios de resposta
+  rating          Float       @default(0)
+  totalReviews    Int         @default(0)
   
   // Relações
   practiceAreas   LawyerPracticeArea[]
@@ -154,6 +156,7 @@ model Lawyer {
   subscriptions   Subscription[]
   verification    LawyerVerification?
   conversations   Conversation[]
+  consultations   Consultation[]
   leadPurchases   LeadPurchase[]
   leadViews       LeadView[]
   leadMatches     LeadMatch[]
@@ -255,9 +258,10 @@ model Client {
   state       String?
   preferredLanguage String @default("pt")
   
-  cases       Case[]
-  reviews     Review[]
+  cases         Case[]
+  reviews       Review[]
   conversations Conversation[]
+  consultations Consultation[]
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -412,10 +416,10 @@ model Message {
 }
 
 // =============================================================================
-// AVALIAÇÕES (COM PROVA)
+// CONSULTAS/AGENDAMENTOS
 // =============================================================================
 
-model Review {
+model Consultation {
   id          String    @id @default(cuid())
   
   client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -424,23 +428,70 @@ model Review {
   lawyer      Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   lawyerId    String
   
-  rating      Int
-  title       String?
-  comment     String?   @db.Text
+  caseId      String?
   
-  // PROOF OF SERVICE (anti-fake)
-  verified    Boolean   @default(false)
-  ipAddress   String?
+  // Agendamento
+  scheduledAt DateTime
+  duration    Int       @default(30) // minutos
+  status      String    @default("scheduled") // scheduled, completed, cancelled, no-show
   
-  response    String?   @db.Text
-  respondedAt DateTime?
+  // Video call (Jitsi/Zoom)
+  meetingLink String?
+  meetingId   String?
+  
+  // Notas
+  notes       String?   @db.Text
+  summary     String?   @db.Text
+  
+  // Pagamento
+  price       Int
+  paid        Boolean   @default(false)
+  paidAt      DateTime?
+  
+  reviews     Review[]
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@unique([clientId, lawyerId])
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+// =============================================================================
+// AVALIAÇÕES (COM PROVA)
+// =============================================================================
+
+model Review {
+  id             String        @id @default(cuid())
+  
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId       String
+  
+  lawyer         Lawyer        @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId       String
+  
+  consultation   Consultation? @relation(fields: [consultationId], references: [id], onDelete: SetNull)
+  consultationId String?
+  
+  rating         Int
+  title          String?
+  comment        String?       @db.Text
+  
+  // PROOF OF SERVICE (anti-fake)
+  verified       Boolean       @default(false)
+  ipAddress      String?
+  
+  response       String?       @db.Text
+  respondedAt    DateTime?
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
   @@index([lawyerId, verified])
   @@index([rating])
+  @@index([consultationId])
 }
 
 // =============================================================================
