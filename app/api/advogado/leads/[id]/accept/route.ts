@@ -93,7 +93,7 @@ export async function POST(
     await prisma.leadMatch.create({
       data: {
         caseId: leadId,
-        lawyerId: session.user.id,
+        lawyerId: lawyer.id,
         status: 'ACTIVE',
         matchedAt: new Date(),
         matchScore: 85, // Score default, pode ser calculado depois
@@ -105,12 +105,12 @@ export async function POST(
       where: {
         caseId_lawyerId: {
           caseId: leadId,
-          lawyerId: session.user.id,
+          lawyerId: lawyer.id,
         },
       },
       create: {
         caseId: leadId,
-        lawyerId: session.user.id,
+        lawyerId: lawyer.id,
         viewedAt: new Date(),
       },
       update: {
