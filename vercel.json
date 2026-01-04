@@ -1,28 +1,7 @@
 {
-  "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "env": {
-    "NEXTAUTH_URL": "https://meuadvogado-us.vercel.app",
-    "NEXT_PUBLIC_APP_URL": "https://meuadvogado-us.vercel.app",
-    "NEXT_PUBLIC_APP_NAME": "Advogados Brasileiros USA"
-  },
-  "build": {
-    "env": {
-      "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
@@ -30,26 +9,5 @@
     "pages/api/**/*.ts": {
       "maxDuration": 30
     }
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
-  ],
-  "regions": ["iad1"],
-  "framework": "nextjs"
+  }
 }
