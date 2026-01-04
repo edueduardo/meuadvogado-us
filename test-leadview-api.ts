@@ -68,14 +68,23 @@ async function testLeadViewAPI() {
         })
       }
 
+      // Buscar uma área de prática existente
+      const practiceArea = await prisma.practiceArea.findFirst()
+      
+      if (!practiceArea) {
+        console.log('❌ ERRO: Nenhuma área de prática encontrada')
+        return
+      }
+
       testCase = await prisma.case.create({
         data: {
           clientId: client.id,
+          contactName: 'Test Contact',
+          contactPhone: '+1-555-0123',
+          practiceAreaId: practiceArea.id,
           title: 'Caso de Teste - LeadView API',
           description: 'Este é um caso criado para testar a API LeadView',
-          type: 'Immigration',
-          status: 'NEW',
-          urgency: 'MEDIUM'
+          status: 'NEW'
         }
       })
       console.log('✅ Caso criado:', testCase.id)
