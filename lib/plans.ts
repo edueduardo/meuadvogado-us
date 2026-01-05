@@ -18,7 +18,6 @@ export const PLANS = {
     name: 'Premium',
     price: 199,
     priceId: process.env.STRIPE_PRICE_PREMIUM,
-    stripePriceId: 'price_1Oxxxx', // Atualizar
     features: [
       'Tudo do Gratuito',
       'Até 5 áreas de atuação',
@@ -37,7 +36,6 @@ export const PLANS = {
     name: 'Destaque',
     price: 399,
     priceId: process.env.STRIPE_PRICE_FEATURED,
-    stripePriceId: 'price_1Oxxxx', // Atualizar
     features: [
       'Tudo do Premium',
       'Áreas ilimitadas',
