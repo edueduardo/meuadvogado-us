@@ -22,6 +22,9 @@ export default function Header() {
             <Link href="/advogados" className="text-gray-700 hover:text-blue-600">
               Buscar Advogados
             </Link>
+            <Link href="/consultas" className="text-gray-700 hover:text-blue-600">
+              📹 Agendar Consulta
+            </Link>
             <Link href="/como-funciona" className="text-gray-700 hover:text-blue-600">
               Como Funciona
             </Link>
