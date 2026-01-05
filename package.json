@@ -12,7 +12,15 @@
     "db:seed:complete": "tsx prisma/seed-complete.ts",
     "db:studio": "prisma studio",
     "queues:status": "curl http://localhost:3000/api/admin/queues/status",
-    "queues:clear": "curl -X DELETE http://localhost:3000/api/admin/queues/status"
+    "queues:clear": "curl -X DELETE http://localhost:3000/api/admin/queues/status",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:api": "jest --testPathPatterns=api",
+    "test:components": "jest --testPathPatterns=components",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -64,11 +72,17 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "20.10.0",
     "@types/react": "18.2.39",
     "@types/react-dom": "18.2.17",
     "autoprefixer": "10.4.16",
+    "babel-jest": "^30.2.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "postcss": "8.4.32",
     "prisma": "^5.22.0",
     "tailwindcss": "3.4.0",
