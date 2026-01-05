@@ -422,8 +422,8 @@ model Message {
 model Consultation {
   id          String    @id @default(cuid())
   
-  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId    String
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String?
   
   lawyer      Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   lawyerId    String
@@ -433,6 +433,7 @@ model Consultation {
   // Agendamento
   scheduledAt DateTime
   duration    Int       @default(30) // minutos
+  consultationType String @default("VIDEO") // VIDEO, PHONE, IN_PERSON
   status      String    @default("scheduled") // scheduled, completed, cancelled, no-show
   
   // Video call (Jitsi/Zoom)
@@ -457,6 +458,7 @@ model Consultation {
   @@index([lawyerId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([consultationType])
 }
 
 // =============================================================================
