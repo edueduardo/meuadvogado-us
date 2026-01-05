@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Video, Phone, Users, DollarSign, AlertCircle, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, Phone, Users, DollarSign, AlertCircle, Check } from 'lucide-react';
 import Calendar from './Calendar';
 
 interface Lawyer {
@@ -147,7 +147,7 @@ export default function ConsultationForm({ lawyer, onSubmit, loading = false }: 
       {/* Calendário */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          <Calendar className="w-4 h-4 inline mr-1" />
+          <CalendarIcon className="w-4 h-4 inline mr-1" />
           Selecione a Data
         </label>
         <Calendar

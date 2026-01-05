@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import { Calendar, Clock, Video, Phone, Users, ArrowLeft, Check, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Video, Phone, Users, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface Lawyer {
@@ -326,7 +326,7 @@ export default function AgendarConsultaPage() {
             {/* Data */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
+                <CalendarIcon className="w-4 h-4 inline mr-1" />
                 Data da Consulta
               </label>
               <input
