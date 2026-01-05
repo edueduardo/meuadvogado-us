@@ -1205,3 +1205,199 @@ Observações:
 ---
 
 **Fim de SPRINT_LOG - SESSÃO 7 (ITEM #6)**
+
+---
+
+## SESSÃO 8: ETAPA 4 - IMPLEMENTAÇÃO ITEM #7
+
+**Data**: 2026-01-05
+**Hora Início**: ~17:50 UTC
+**Objetivo Único**: Implementar ITEM #7 (remover price ID placeholders), PARAR
+
+---
+
+### O QUE FOI FEITO
+
+#### Execução de ITEM #7: Remover hardcodes de Price IDs do Stripe
+
+**Status**: ✅ **COMPLETO**
+
+| Etapa | Resultado | Tempo |
+|-------|-----------|-------|
+| Localizar price_1Oxxxx | ✓ 2 ocorrências em lib/plans.ts | <1s |
+| Verificar PREMIUM stripePriceId | ✓ Linha 21 confirmada | <1s |
+| Verificar FEATURED stripePriceId | ✓ Linha 40 confirmada | <1s |
+| Analisar uso no código | ✓ Campo stripePriceId é dead code | <1s |
+| Remover placeholders | ✓ Removidos completamente | <1s |
+| Validar zero refs restantes | ✓ Zero matches em app/lib | <1s |
+| npm run build | ✓ PASS em 8.1s | 9s |
+| Fazer commit | ✓ Commit `05ce81a` | <1s |
+| Push para branch | ✓ Sync com remote | <1s |
+
+---
+
+### ANÁLISE TÉCNICA
+
+#### Descoberta: Código Morto vs. Uso Real
+
+**No arquivo `/lib/plans.ts`**:
+- **stripePriceId**: Campo hardcoded com `'price_1Oxxxx'`
+- **priceId**: Campo usando `process.env.STRIPE_PRICE_PREMIUM/FEATURED`
+
+**No arquivo `/app/api/stripe/webhook/route.ts`**:
+```typescript
+// Linha 34-37: Função getStripePriceId(plan)
+function getStripePriceId(plan: PlanType): string | null {
+  const key = plan as keyof typeof PLANS;
+  const entry = PLANS[key];
+  return entry?.priceId ?? null;  // ← Usa priceId, NÃO stripePriceId!
+}
+```
+
+**Conclusão**: stripePriceId é campo morto (unused)
+
+#### Impacto da Remoção
+- ✅ Nenhuma quebra de funcionalidade
+- ✅ Código usa priceId (correto)
+- ✅ priceId vem de environment (correto)
+- ✅ Remove confusão/duplicação
+- ✅ Torna padrão limpo e único
+
+---
+
+### HARDCODES REMOVIDOS
+
+#### Arquivo: `/lib/plans.ts`
+
+| Plano | Linha | Campo | Antes | Depois |
+|-------|-------|-------|-------|--------|
+| PREMIUM | 21 | stripePriceId | `'price_1Oxxxx'` | Removido |
+| FEATURED | 40 | stripePriceId | `'price_1Oxxxx'` | Removido |
+
+**Total linhas removidas**: 2
+
+---
+
+### PROVAS DE EXECUÇÃO
+
+#### Verificação de Remoção
+```bash
+grep -r "price_1Oxxxx" app/ lib/
+# Result: (empty) ✓ Zero matches
+
+grep -r "stripePriceId.*=.*'" lib/
+# Result: (empty) ✓ Todos removidos
+```
+
+#### Build Validation
+```
+✓ Compiled successfully in 8.1s
+✓ Generating static pages (18/18)
+✓ Build time improved (was 8.6s, now 8.1s)
+```
+
+#### Git Status
+```
+Commit: 05ce81a
+Message: fix: remove hardcoded Stripe price ID placeholders from plans
+Changes: -2 (1 file modified)
+Branch: claude/recover-saas-project-NJ92f
+Status: Pushed to remote ✓
+```
+
+---
+
+### PADRÃO CORRETO AGORA
+
+```typescript
+export const PLANS = {
+  FREE: {
+    name: 'Gratuito',
+    price: 0,
+    priceId: null,
+    // ...
+  },
+  PREMIUM: {
+    name: 'Premium',
+    price: 199,
+    priceId: process.env.STRIPE_PRICE_PREMIUM,  // ← Único padrão
+    features: [ ... ],
+    // ...
+  },
+  FEATURED: {
+    name: 'Destaque',
+    price: 399,
+    priceId: process.env.STRIPE_PRICE_FEATURED,  // ← Único padrão
+    features: [ ... ],
+    // ...
+  }
+};
+```
+
+**Padrão**:
+- ✅ `priceId` obtém valor de environment variables
+- ✅ Webhook usa `getStripePriceId(plan)` que retorna `priceId`
+- ✅ Nenhum hardcode `price_` no código
+- ✅ Nenhum campo redundante `stripePriceId`
+
+---
+
+### STATUS FINAL DE ITEM #7
+
+**Critério de Sucesso**:
+- [x] 2 ocorrências de 'price_1Oxxxx' localizadas
+- [x] Removidas de ambos planos (PREMIUM e FEATURED)
+- [x] Nenhum placeholder 'price_1Oxxxx' restante
+- [x] Nenhum comment '// Atualizar' restante
+- [x] Padrão único e limpo (priceId from env)
+- [x] Build passou (8.1s)
+- [x] Commit criado e pushed
+- [x] Documentação atualizada
+
+**Resultado**: ✅ **100% COMPLETO**
+
+---
+
+### PRÓXIMOS PASSOS
+
+**Estrutura de Preços**:
+- Real Stripe price IDs devem ser fornecidos via environment variables:
+  - `STRIPE_PRICE_PREMIUM` - Price ID para plano Premium
+  - `STRIPE_PRICE_FEATURED` - Price ID para plano Featured
+- Quando environment estiver configurado, endpoint `/api/stripe/upgrade` pode ser desblocked
+
+**Nota**: Endpoint Stripe permanece bloqueado (ITEM #6) até autenticação ser implementada
+
+---
+
+### IMPACTO ACUMULATIVO
+
+| Métrica | Item #1 | Item #2 | Item #3 | Item #4 | Item #5 | Item #6 | Item #7 | Total |
+|---------|---------|---------|---------|---------|---------|---------|---------|-------|
+| **Arquivos alterados** | 1 | 2 | 2 | 0 | 2 | 1 | 1 | 9 |
+| **Linhas removidas** | 206 | 998 | 18 | 0 | 68 | 8 | 2 | 1300 |
+| **Build time** | 10.6s | 8.1s | 8.1s | 8.4s | 8.3s | 8.6s | 8.1s | 8.1s |
+| **Lint working** | N/A | N/A | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Hardcodes removed** | N/A | N/A | N/A | N/A | ✓ (1) | ✓ (2) | ✓ (2) | ✓ (5) |
+| **Code quality** | Clean | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Packages** | 497 | 416 | 416 | 416 | 416 | 416 | 416 | 416 |
+
+---
+
+### ASSINATURA DE SESSÃO 8
+
+Responsável: Engenheiro SaaS (Recovery Mode)
+Timestamp: 2026-01-05 18:00 UTC
+Status: ✅ ITEM #7 COMPLETO, AGUARDANDO APROVAÇÃO
+
+Observações:
+- Item #7 completado conforme plano
+- Stripe price ID placeholders removidos (dead code)
+- Sistema agora usa padrão único e limpo (priceId from env)
+- Build validation passou (8.1s, melhor performance)
+- Código mais legível e sem confusão
+- Ready for ITEM #8 (if approved)
+
+---
+
+**Fim de SPRINT_LOG - SESSÃO 8 (ITEM #7)**
