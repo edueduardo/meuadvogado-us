@@ -79,8 +79,22 @@ Acesse: http://localhost:3000
 11. ✅ **Busca Inteligente** - Filtros + paginação
 12. ✅ **Analytics** - Rastreamento de eventos
 13. ✅ **Marketplace** - Serviços + avaliações
+14. ✅ **VIDEO CONSULTAS** - Jitsi integrado, validações, API completa
 
-**Total:** 202 arquivos, ~15.000 linhas de código
+**Total:** 203 arquivos, ~15.300 linhas de código
+
+### 🎥 Novo: API de Video Consultas
+
+**Endpoint:** `POST /api/consultations/create`
+
+Criar e gerenciar consultas por vídeo com Jitsi integrado:
+- Gera link Jitsi automaticamente
+- Valida disponibilidade de horário
+- Rate limiting (5/hora)
+- Suporte VIDEO, PHONE, IN_PERSON
+- GET endpoint para listar consultas
+
+Ver documentação completa: [`VIDEO-CONSULTAS-IMPLEMENTATION.md`](./VIDEO-CONSULTAS-IMPLEMENTATION.md)
 
 ## 📄 Licença
 
