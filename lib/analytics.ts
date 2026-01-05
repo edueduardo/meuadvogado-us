@@ -169,14 +169,14 @@ export async function getLeadsChartData(days: number = 30): Promise<ChartData> {
     datasets: [
       {
         label: 'Total de Leads',
-        data: data.map(d => d.total),
+        data: data.map((d: any) => d.total),
         backgroundColor: 'rgba(59, 130, 246, 0.2)',
         borderColor: 'rgba(59, 130, 246, 1)',
         tension: 0.4
       },
       {
         label: 'Convertidos',
-        data: data.map(d => d.converted),
+        data: data.map((d: any) => d.converted),
         backgroundColor: 'rgba(34, 197, 94, 0.2)',
         borderColor: 'rgba(34, 197, 94, 1)',
         tension: 0.4
@@ -292,9 +292,9 @@ export async function getTopPracticeAreas(limit: number = 10): Promise<Array<{
     }
   })
 
-  const results = practiceAreas.map(area => {
+  const results = practiceAreas.map((area: any) => {
     const leads = area.cases.length
-    const conversions = area.cases.filter(c => c.status === 'CONVERTED').length
+    const conversions = area.cases.filter((c: any) => c.status === 'CONVERTED').length
     // Simplificado: calcular receita baseado em estimativa
     const revenue = conversions * 500 // Estimativa de R$500 por conversão
 
@@ -307,7 +307,7 @@ export async function getTopPracticeAreas(limit: number = 10): Promise<Array<{
   })
 
   return results
-    .sort((a, b) => b.leads - a.leads)
+    .sort((a: any, b: any) => b.leads - a.leads)
     .slice(0, limit)
 }
 
@@ -330,9 +330,9 @@ export async function getTopLawyers(limit: number = 10): Promise<Array<{
     take: limit * 2 // Pegar mais para filtrar depois
   })
 
-  const results = lawyers.map(lawyer => {
+  const results = lawyers.map((lawyer: any) => {
     const leads = lawyer.cases.length
-    const conversions = lawyer.cases.filter(c => c.status === 'CONVERTED').length
+    const conversions = lawyer.cases.filter((c: any) => c.status === 'CONVERTED').length
     const conversionRate = leads > 0 ? Math.round((conversions / leads) * 100) : 0
     // Simplificado: calcular receita baseado em estimativa
     const revenue = conversions * 500 // Estimativa de R$500 por conversão
@@ -347,8 +347,8 @@ export async function getTopLawyers(limit: number = 10): Promise<Array<{
   })
 
   return results
-    .filter(l => l.leads > 0) // Apenas com leads
-    .sort((a, b) => b.revenue - a.revenue)
+    .filter((l: any) => l.leads > 0) // Apenas com leads
+    .sort((a: any, b: any) => b.revenue - a.revenue)
     .slice(0, limit)
 }
 

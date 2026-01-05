@@ -186,7 +186,7 @@ export class RealtimeService {
       });
 
       // Entrar em todas as salas de conversa
-      conversations.forEach(conv => {
+      conversations.forEach((conv: any) => {
         socket.join(`conversation_${conv.id}`);
       });
 

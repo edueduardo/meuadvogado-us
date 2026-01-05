@@ -104,7 +104,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      views: views.map(v => ({
+      views: views.map((v: any) => ({
         id: v.id,
         viewedAt: v.viewedAt,
         lawyer: v.lawyer,

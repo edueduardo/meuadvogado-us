@@ -279,7 +279,7 @@ export class AnalyticsService {
     });
 
     const result = await Promise.all(
-      cases.map(async (c) => {
+      cases.map(async (c: any) => {
         const practiceArea = await prisma.practiceArea.findUnique({
           where: { id: c.practiceAreaId! }
         });
@@ -367,8 +367,8 @@ export class AnalyticsService {
     }
 
     const totalCases = lawyer.cases.length;
-    const wonCases = lawyer.cases.filter(c => c.status === 'CLOSED').length;
-    const pendingCases = lawyer.cases.filter(c => ['NEW', 'ANALYZING', 'MATCHED', 'CONTACTED', 'CONVERTED'].includes(c.status)).length;
+    const wonCases = lawyer.cases.filter((c: any) => c.status === 'CLOSED').length;
+    const pendingCases = lawyer.cases.filter((c: any) => ['NEW', 'ANALYZING', 'MATCHED', 'CONTACTED', 'CONVERTED'].includes(c.status)).length;
     
     const totalRevenue = await prisma.payment.aggregate({
       where: {
@@ -380,7 +380,7 @@ export class AnalyticsService {
     });
 
     const avgRating = lawyer.reviews.length > 0 
-      ? lawyer.reviews.reduce((sum, r) => sum + r.rating, 0) / lawyer.reviews.length 
+      ? lawyer.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / lawyer.reviews.length 
       : 0;
 
     return {
@@ -412,8 +412,8 @@ export class AnalyticsService {
     }
 
     const totalCases = client.cases.length;
-    const wonCases = client.cases.filter(c => c.status === 'CLOSED').length;
-    const pendingCases = client.cases.filter(c => ['NEW', 'ANALYZING', 'MATCHED', 'CONTACTED', 'CONVERTED'].includes(c.status)).length;
+    const wonCases = client.cases.filter((c: any) => c.status === 'CLOSED').length;
+    const pendingCases = client.cases.filter((c: any) => ['NEW', 'ANALYZING', 'MATCHED', 'CONTACTED', 'CONVERTED'].includes(c.status)).length;
 
     return {
       totalCases,

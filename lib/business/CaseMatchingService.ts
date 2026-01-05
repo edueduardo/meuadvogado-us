@@ -2,10 +2,8 @@
 // LEGALAI - CASE MATCHING SERVICE (REAL BUSINESS LOGIC)
 // =============================================================================
 import { prisma } from '@/lib/prisma';
-import { Case, Lawyer, PracticeArea } from '@prisma/client';
-
 export interface CaseMatchResult {
-  lawyer: Lawyer;
+  lawyer: any;
   score: number;
   matchReasons: string[];
   estimatedSuccess: number;
@@ -52,7 +50,7 @@ export class CaseMatchingService {
 
     // 2. Calcular score de matching para cada advogado
     const scoredLawyers = await Promise.all(
-      candidateLawyers.map(async (lawyer) => {
+      candidateLawyers.map(async (lawyer: any) => {
         const score = await this.calculateMatchScore(lawyer, caseData);
         return {
           lawyer,
@@ -71,7 +69,7 @@ export class CaseMatchingService {
       .slice(0, limit);
   }
 
-  private async calculateMatchScore(lawyer: Lawyer, caseData: Case): Promise<number> {
+  private async calculateMatchScore(lawyer: any, caseData: any): Promise<number> {
     let score = 0;
 
     // Localização (40% do score)
@@ -104,7 +102,7 @@ export class CaseMatchingService {
     return score;
   }
 
-  private getMatchReasons(lawyer: Lawyer, caseData: Case): string[] {
+  private getMatchReasons(lawyer: any, caseData: any): string[] {
     const reasons = [];
 
     if (lawyer.city === caseData.contactCity) {
@@ -126,7 +124,7 @@ export class CaseMatchingService {
     return reasons;
   }
 
-  private calculateSuccessProbability(lawyer: Lawyer, caseData: Case): number {
+  private calculateSuccessProbability(lawyer: any, caseData: any): number {
     // Algoritmo baseado em dados históricos
     let probability = 0.5; // Base 50%
 
@@ -144,7 +142,7 @@ export class CaseMatchingService {
     return Math.min(Math.max(probability, 0.1), 0.95);
   }
 
-  private calculateExperience(lawyer: Lawyer): number {
+  private calculateExperience(lawyer: any): number {
     // Calcular anos de experiência baseado em data de criação
     const yearsSinceCreation = 
       (new Date().getTime() - new Date(lawyer.createdAt).getTime()) / 
@@ -153,7 +151,7 @@ export class CaseMatchingService {
     return Math.floor(yearsSinceCreation);
   }
 
-  private async getAvailability(lawyer: Lawyer): Promise<'immediate' | '24h' | '48h' | 'week'> {
+  private async getAvailability(lawyer: any): Promise<'immediate' | '24h' | '48h' | 'week'> {
     // Lógica real de disponibilidade baseada em:
     // - Calendário do advogado
     // - Carga de trabalho atual

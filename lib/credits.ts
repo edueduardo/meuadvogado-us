@@ -89,7 +89,7 @@ export async function addCredits(
   stripePaymentIntentId?: string,
   packageId?: string
 ): Promise<CreditTransaction> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     // Buscar ou criar saldo
     let balance = await tx.creditBalance.findUnique({
       where: { lawyerId }
@@ -147,7 +147,7 @@ export async function consumeCredits(
   leadId: string,
   amount: number = CREDITS_PER_LEAD
 ): Promise<{ success: boolean; transaction?: CreditTransaction; error?: string }> {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: any) => {
     // Buscar saldo
     const balance = await tx.creditBalance.findUnique({
       where: { lawyerId }
@@ -272,7 +272,7 @@ export async function getCreditTransactions(
     skip: offset
   })
 
-  return transactions.map(t => ({
+  return transactions.map((t: any) => ({
     id: t.id,
     type: t.type as any,
     amount: t.amount,
@@ -292,7 +292,7 @@ export async function getCreditPackages(): Promise<CreditPackage[]> {
     orderBy: { price: 'asc' }
   })
 
-  return packages.map(p => ({
+  return packages.map((p: any) => ({
     id: p.id,
     name: p.name,
     description: p.description,

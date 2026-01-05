@@ -202,10 +202,10 @@ export class AuditService {
       },
       summary: {
         totalLogs: logs.length,
-        criticalEvents: logs.filter(l => l.severity === 'CRITICAL').length,
-        highEvents: logs.filter(l => l.severity === 'HIGH').length,
-        mediumEvents: logs.filter(l => l.severity === 'MEDIUM').length,
-        lowEvents: logs.filter(l => l.severity === 'LOW').length,
+        criticalEvents: logs.filter((l: any) => l.severity === 'CRITICAL').length,
+        highEvents: logs.filter((l: any) => l.severity === 'HIGH').length,
+        mediumEvents: logs.filter((l: any) => l.severity === 'MEDIUM').length,
+        lowEvents: logs.filter((l: any) => l.severity === 'LOW').length,
       },
       actionsByFrequency: this.groupBy(logs, 'action'),
       resourcesByFrequency: this.groupBy(logs, 'resource'),
@@ -255,7 +255,7 @@ export class AuditService {
     const suspicious = [];
 
     // Múltiplas tentativas de login falhadas
-    const failedLogins = recentLogs.filter(l => l.action === AuditAction.LOGIN_FAILED);
+    const failedLogins = recentLogs.filter((l: any) => l.action === AuditAction.LOGIN_FAILED);
     if (failedLogins.length >= 5) {
       suspicious.push({
         type: 'MULTIPLE_LOGIN_FAILURES',
@@ -265,7 +265,7 @@ export class AuditService {
     }
 
     // Mudanças de perfil em sequência
-    const profileUpdates = recentLogs.filter(l => l.action === AuditAction.LAWYER_PROFILE_UPDATED);
+    const profileUpdates = recentLogs.filter((l: any) => l.action === AuditAction.LAWYER_PROFILE_UPDATED);
     if (profileUpdates.length >= 3) {
       suspicious.push({
         type: 'EXCESSIVE_PROFILE_CHANGES',
@@ -275,7 +275,7 @@ export class AuditService {
     }
 
     // Acesso de IPs diferentes
-    const uniqueIPs = new Set(recentLogs.map(l => l.ipAddress).filter(Boolean));
+    const uniqueIPs = new Set(recentLogs.map((l: any) => l.ipAddress).filter(Boolean));
     if (uniqueIPs.size >= 3) {
       suspicious.push({
         type: 'MULTIPLE_IP_ACCESS',

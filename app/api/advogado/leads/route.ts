@@ -49,8 +49,8 @@ export async function GET(req: NextRequest) {
         })
 
         // Combinar dados com scores
-        const leadsWithScores = leadsData.map(lead => {
-          const matchData = recommendedLeads.find(r => r.leadId === lead.id)
+        const leadsWithScores = leadsData.map((lead: any) => {
+          const matchData = recommendedLeads.find((r: any) => r.leadId === lead.id)
           return {
             ...lead,
             _matchingScore: matchData?.score || 0,
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Adicionar score básico para todos os leads
-    const leadsWithBasicScore = leads.map(lead => ({
+    const leadsWithBasicScore = leads.map((lead: any) => ({
       ...lead,
       _matchingScore: lead.analysis?.successProbability || 50,
       _recommendation: 'MEDIUM' as const,

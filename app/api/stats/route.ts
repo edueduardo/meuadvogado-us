@@ -63,7 +63,7 @@ export async function GET() {
       practiceAreas: totalPracticeAreas,
       cases: {
         total: totalCases,
-        byStatus: casesByStatus.reduce((acc, item) => {
+        byStatus: casesByStatus.reduce((acc: any, item: any) => {
           acc[item.status] = item._count;
           return acc;
         }, {} as Record<string, number>)

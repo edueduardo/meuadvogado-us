@@ -40,7 +40,10 @@ export default function ChatConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [conversation, setConversation] = useState<Conversation | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [otherUser, setOtherUser] = useState<User | null>(null)
   const [useWebSocket, setUseWebSocket] = useState(true)
@@ -168,7 +171,6 @@ export default function ChatConversationPage() {
   }
 
   const isLawyer = session?.user?.role === 'LAWYER'
-  const otherUser = isLawyer ? conversation?.client?.user : conversation?.lawyer?.user
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

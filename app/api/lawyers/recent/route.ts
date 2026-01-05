@@ -40,10 +40,10 @@ export async function GET() {
     });
 
     // Calcular rating médio
-    const lawyersWithRating = lawyers.map((lawyer) => {
-      const ratings = lawyer.reviews.map((r) => r.rating);
+    const lawyersWithRating = lawyers.map((lawyer: any) => {
+      const ratings = lawyer.reviews.map((r: any) => r.rating);
       const avgRating = ratings.length > 0
-        ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+        ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
         : 0;
 
       return {
@@ -58,7 +58,7 @@ export async function GET() {
         featured: lawyer.featured,
         yearsExperience: lawyer.yearsExperience,
         languages: lawyer.languages,
-        practiceAreas: lawyer.practiceAreas.map((pa) => ({
+        practiceAreas: lawyer.practiceAreas.map((pa: any) => ({
           name: pa.practiceArea.name,
           slug: pa.practiceArea.slug,
         })),

@@ -3,7 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 import Header from './components/Header'
 import ToastProvider from './components/ToastProvider'
-import SocketInitializer from './components/SocketInitializer'
+import SocketInitializer from '@/components/SocketInitializer'
 
 export const metadata: Metadata = {
   title: 'Meu Advogado - Advogados Brasileiros nos EUA',

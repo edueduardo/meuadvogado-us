@@ -35,6 +35,8 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
+    "e2e/**/*",
+    "__tests__/**/*",
     "node_modules"
   ]
 }

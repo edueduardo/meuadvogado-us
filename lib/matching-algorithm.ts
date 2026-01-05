@@ -10,10 +10,8 @@
  * - Avaliação (15 pts): 5 estrelas = 15pts
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma'
 import { isAfter, subDays } from 'date-fns'
-
-const prisma = new PrismaClient()
 
 export interface MatchFactors {
   practiceAreaScore: number
@@ -93,7 +91,7 @@ export async function calculateMatchScore(
 
     // 1. SCORE ÁREA DE PRÁTICA (50 pontos)
     const practiceAreaMatch = lawyer.practiceAreas.some(
-      pa => pa.practiceArea.name === lead.practiceArea.name
+      (pa: any) => pa.practiceArea.name === lead.practiceArea.name
     )
     const practiceAreaScore = practiceAreaMatch ? 50 : 0
 
@@ -109,7 +107,7 @@ export async function calculateMatchScore(
 
     // 4. SCORE AVALIAÇÃO (15 pontos)
     const avgRating = lawyer.reviews.length > 0
-      ? lawyer.reviews.reduce((sum, review) => sum + review.rating, 0) / lawyer.reviews.length
+      ? lawyer.reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / lawyer.reviews.length
       : 0
     
     const ratingScore = Math.min(15, (avgRating / 5) * 15)
@@ -180,7 +178,7 @@ export async function getRecommendedLeads(
     }
 
     // Calcular score para cada lead
-    const matchPromises = availableLeads.map(lead => 
+    const matchPromises = availableLeads.map((lead: any) => 
       calculateMatchScore(lawyerId, lead.id)
     )
 
@@ -188,8 +186,8 @@ export async function getRecommendedLeads(
 
     // Filtrar e ordenar por score
     return matches
-      .filter(match => match.score >= 30) // Mínimo 30 pontos
-      .sort((a, b) => b.score - a.score)
+      .filter((match: any) => match.score >= 30) // Mínimo 30 pontos
+      .sort((a: any, b: any) => b.score - a.score)
       .slice(0, limit)
 
   } catch (error) {
@@ -269,7 +267,7 @@ export async function getTopLawyersForLead(
     }
 
     // Calcular score para cada advogado
-    const matchPromises = activeLawyers.map(lawyer => 
+    const matchPromises = activeLawyers.map((lawyer: any) => 
       calculateMatchScore(lawyer.id, leadId)
     )
 
@@ -277,8 +275,8 @@ export async function getTopLawyersForLead(
 
     // Filtrar e ordenar por score
     return matches
-      .filter(match => match.score >= 40) // Mínimo 40 pontos
-      .sort((a, b) => b.score - a.score)
+      .filter((match: any) => match.score >= 40) // Mínimo 40 pontos
+      .sort((a: any, b: any) => b.score - a.score)
       .slice(0, limit)
 
   } catch (error) {

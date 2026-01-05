@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Buscar conversas relacionadas
-    const conversationIds = matches.map(m => m.caseId).filter(Boolean)
+    const conversationIds = matches.map((m: any) => m.caseId).filter(Boolean)
     const conversations = conversationIds.length > 0 
       ? await prisma.conversation.findMany({
           where: {
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       : []
 
     // Mapear conversas para os matches
-    const matchesWithConversations = matches.map(match => ({
+    const matchesWithConversations = matches.map((match: any) => ({
       id: match.id,
       status: match.status,
       matchedAt: match.matchedAt,
@@ -106,21 +106,21 @@ export async function GET(req: NextRequest) {
         practiceArea: match.case.practiceArea,
         client: match.case.client
       },
-      conversationId: conversations.find(c => c.caseId === match.caseId)?.id
+      conversationId: conversations.find((c: any) => c.caseId === match.caseId)?.id
     }))
 
     // Calcular estatísticas
     const stats = {
       total: matches.length,
-      active: matches.filter(m => m.status === 'ACTIVE').length,
-      converted: matches.filter(m => m.status === 'CONVERTED').length,
-      declined: matches.filter(m => m.status === 'DECLINED').length,
-      expired: matches.filter(m => m.status === 'EXPIRED').length,
+      active: matches.filter((m: any) => m.status === 'ACTIVE').length,
+      converted: matches.filter((m: any) => m.status === 'CONVERTED').length,
+      declined: matches.filter((m: any) => m.status === 'DECLINED').length,
+      expired: matches.filter((m: any) => m.status === 'EXPIRED').length,
       conversionRate: matches.length > 0 
-        ? Math.round((matches.filter(m => m.status === 'CONVERTED').length / matches.length) * 100)
+        ? Math.round((matches.filter((m: any) => m.status === 'CONVERTED').length / matches.length) * 100)
         : 0,
       avgMatchScore: matches.length > 0
-        ? Math.round(matches.reduce((sum, m) => sum + (m.matchScore || 0), 0) / matches.length)
+        ? Math.round(matches.reduce((sum: number, m: any) => sum + (m.matchScore || 0), 0) / matches.length)
         : 0
     }
 

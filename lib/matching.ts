@@ -56,7 +56,7 @@ export async function matchLawyersToCase(
     },
   });
 
-  const scored = lawyers.map((lawyer) => {
+  const scored = lawyers.map((lawyer: any) => {
     let score = 0;
     const reasons: string[] = [];
 
@@ -73,7 +73,7 @@ export async function matchLawyersToCase(
 
     // 2. ÁREA DE ATUAÇÃO (peso 30 pontos)
     const hasArea = lawyer.practiceAreas.some(
-      (pa) => pa.practiceAreaId === caseData.practiceAreaId
+      (pa: any) => pa.practiceAreaId === caseData.practiceAreaId
     );
     if (hasArea) {
       score += 30;
@@ -139,7 +139,7 @@ export async function matchLawyersToCase(
   });
 
   // Ordenar por score (maior primeiro)
-  return scored.sort((a, b) => b.score - a.score);
+  return scored.sort((a: any, b: any) => b.score - a.score);
 }
 
 // Função para distribuir leads baseado no plano

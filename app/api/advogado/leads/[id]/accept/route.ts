@@ -329,12 +329,12 @@ export async function GET(
     // Calcular estatísticas
     const stats = {
       total: matches.length,
-      active: matches.filter(m => m.status === 'ACTIVE').length,
-      converted: matches.filter(m => m.status === 'CONVERTED').length,
-      declined: matches.filter(m => m.status === 'DECLINED').length,
-      expired: matches.filter(m => m.status === 'EXPIRED').length,
+      active: matches.filter((m: any) => m.status === 'ACTIVE').length,
+      converted: matches.filter((m: any) => m.status === 'CONVERTED').length,
+      declined: matches.filter((m: any) => m.status === 'DECLINED').length,
+      expired: matches.filter((m: any) => m.status === 'EXPIRED').length,
       conversionRate: matches.length > 0 
-        ? Math.round((matches.filter(m => m.status === 'CONVERTED').length / matches.length) * 100)
+        ? Math.round((matches.filter((m: any) => m.status === 'CONVERTED').length / matches.length) * 100)
         : 0
     }
 
@@ -346,7 +346,7 @@ export async function GET(
         status: lead.status,
         createdAt: lead.createdAt
       },
-      matches: matches.map(m => ({
+      matches: matches.map((m: any) => ({
         id: m.id,
         status: m.status,
         matchedAt: m.matchedAt,
@@ -457,7 +457,7 @@ export async function PUT(
     }
 
     // Atualizar match em transação
-    const updatedMatch = await prisma.$transaction(async (tx) => {
+    const updatedMatch = await prisma.$transaction(async (tx: any) => {
       // Atualizar LeadMatch
       const match = await tx.leadMatch.update({
         where: { id: existingMatch.id },
@@ -485,7 +485,7 @@ export async function PUT(
           }
         })
 
-        const allDeclinedOrExpired = otherMatches.every(m => 
+        const allDeclinedOrExpired = otherMatches.every((m: any) => 
           m.status === 'DECLINED' || m.status === 'EXPIRED'
         )
 
@@ -519,10 +519,10 @@ export async function PUT(
 
     const stats = {
       total: allMatches.length,
-      active: allMatches.filter(m => m.status === 'ACTIVE').length,
-      converted: allMatches.filter(m => m.status === 'CONVERTED').length,
-      declined: allMatches.filter(m => m.status === 'DECLINED').length,
-      expired: allMatches.filter(m => m.status === 'EXPIRED').length,
+      active: allMatches.filter((m: any) => m.status === 'ACTIVE').length,
+      converted: allMatches.filter((m: any) => m.status === 'CONVERTED').length,
+      declined: allMatches.filter((m: any) => m.status === 'DECLINED').length,
+      expired: allMatches.filter((m: any) => m.status === 'EXPIRED').length,
     }
 
     return NextResponse.json({
