@@ -357,7 +357,7 @@ async function getConversationMessages(conversationId: string) {
       take: 50, // Limit to last 50 messages
     })
 
-    return messages.map(msg => ({
+    return messages.map((msg: any) => ({
       id: msg.id,
       content: msg.content,
       type: msg.type,
@@ -466,11 +466,11 @@ async function markMessagesAsRead(
 
 // Socket.IO API route handler
 export default function SocketHandler(req: NextApiRequest, res: NextApiResponse) {
-  if (!res.socket.server.io) {
+  if (!(res.socket as any)?.server?.io) {
     console.log('Initializing Socket.IO...')
-    const httpServer: NetServer = res.socket.server as any
+    const httpServer: NetServer = (res.socket as any).server
     initializeSocket(httpServer)
-    res.socket.server.io = io
+    ;(res.socket as any).server.io = io
   }
   res.end()
 }
