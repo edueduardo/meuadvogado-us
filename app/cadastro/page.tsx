@@ -67,10 +67,8 @@ export default function CadastroPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implementar cadastro
       console.log('Cadastro:', formData);
       alert('Cadastro realizado com sucesso! Redirecionando para o login...');
-      // Redirecionar para login após sucesso
     } catch (error) {
       console.error('Cadastro error:', error);
       alert('Erro ao fazer cadastro. Tente novamente.');

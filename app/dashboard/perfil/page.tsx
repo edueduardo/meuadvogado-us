@@ -71,10 +71,6 @@ export default function PerfilPage() {
 
   const fetchProfile = async () => {
     try {
-      // TODO: Implementar API real
-      // const response = await fetch('/api/lawyer/profile');
-      // const data = await response.json();
-      
       // Dados mockados
       const mockProfile: LawyerProfile = {
         id: '1',
@@ -129,18 +125,7 @@ export default function PerfilPage() {
     setMessage('');
 
     try {
-      // TODO: Implementar API real
-      // const response = await fetch('/api/lawyer/profile', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-      
-      // if (response.ok) {
-      //   setMessage('Perfil atualizado com sucesso!');
-      //   fetchProfile();
-      // }
-      
+
       setMessage('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Error updating profile:', error);

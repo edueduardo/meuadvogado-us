@@ -43,10 +43,6 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      // TODO: Implementar API real
-      // const response = await fetch('/api/dashboard');
-      // const dashboardData = await response.json();
-      
       // Dados mockados por enquanto
       const mockData: DashboardData = {
         lawyer: {

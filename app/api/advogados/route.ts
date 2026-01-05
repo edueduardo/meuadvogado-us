@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     const area = searchParams.get('area');
     const featured = searchParams.get('featured');
-    
+
     const where: any = {};
-    
+
     if (city) where.city = { contains: city, mode: 'insensitive' };
     if (state) where.state = { contains: state, mode: 'insensitive' };
     if (area) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         plan: 'FEATURED'
       };
     }
-    
+
     const lawyers = await prisma.lawyerProfile.findMany({
       where,
       include: {
@@ -63,9 +63,9 @@ export async function GET(request: NextRequest) {
         { createdAt: 'asc' }
       ]
     });
-    
+
     return NextResponse.json({ lawyers });
-    
+
   } catch (error) {
     console.error('Get lawyers error:', error);
     return NextResponse.json(
@@ -77,26 +77,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Implementar autenticação depois
-    const body = await request.json();
-    
-    const lawyer = await prisma.lawyerProfile.create({
-      data: {
-        userId: 'temp-user-id', // TODO: Usar ID do usuário autenticado
-        ...body
-      },
-      include: {
-        user: true,
-        practiceAreas: {
-          include: {
-            practiceArea: true
-          }
-        }
-      }
-    });
-    
-    return NextResponse.json({ lawyer });
-    
+    // BLOCKED: Autenticação não implementada
+    return NextResponse.json(
+      { error: 'Endpoint bloqueado: autenticação não está implementada. Implemente o sistema de autenticação para ativar este endpoint.' },
+      { status: 401 }
+    );
+
+    // Quando autenticação estiver implementada, descomentar:
+    // const body = await request.json();
+    // const userId = session.user.id; // Extrair de contexto autenticado (NextAuth, etc)
+    // const lawyer = await prisma.lawyerProfile.create({
+    //   data: {
+    //     userId: userId,
+    //     ...body
+    //   },
+    //   include: { ... }
+    // });
+
   } catch (error) {
     console.error('Create lawyer error:', error);
     return NextResponse.json(
