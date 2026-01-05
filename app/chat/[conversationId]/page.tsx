@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import WebSocketChat from '@/components/WebSocketChat'
 
 interface Message {
   id: string
@@ -19,8 +20,16 @@ interface Message {
 interface Conversation {
   id: string
   status: string
-  lawyer: { user: { name: string } }
-  client: { user: { name: string } }
+  lawyer: { user: { name: string; isOnline?: boolean } }
+  client: { user: { name: string; isOnline?: boolean } }
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+  isOnline?: boolean
 }
 
 export default function ChatConversationPage() {
@@ -31,22 +40,63 @@ export default function ChatConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [conversation, setConversation] = useState<Conversation | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [otherUser, setOtherUser] = useState<User | null>(null)
+  const [useWebSocket, setUseWebSocket] = useState(true)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
     }
     if (status === 'authenticated' && conversationId) {
-      fetchMessages()
-      const interval = setInterval(fetchMessages, 5000)
-      return () => clearInterval(interval)
+      loadConversation()
     }
   }, [status, conversationId, router])
+
+  const loadConversation = async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      const res = await fetch(`/api/chat/conversations/${conversationId}`)
+      if (!res.ok) {
+        throw new Error('Conversa não encontrada')
+      }
+
+      const data = await res.json()
+      setConversation(data)
+
+      // Determine other user based on current user role
+      const currentUserRole = session?.user?.role
+      let other: User | null = null
+
+      if (currentUserRole === 'CLIENT' && data.lawyer) {
+        other = {
+          id: data.lawyer.id,
+          name: data.lawyer.user.name,
+          email: data.lawyer.user.email || '',
+          role: data.lawyer.user.role,
+          isOnline: data.lawyer.user.isOnline,
+        }
+      } else if (currentUserRole === 'LAWYER' && data.client) {
+        other = {
+          id: data.client.id,
+          name: data.client.user.name,
+          email: data.client.user.email || '',
+          role: data.client.user.role,
+          isOnline: data.client.user.isOnline,
+        }
+      }
+
+      setOtherUser(other)
+    } catch (error: any) {
+      console.error('Error loading conversation:', error)
+      setError(error.message || 'Erro ao carregar conversa')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     scrollToBottom()
@@ -153,99 +203,123 @@ export default function ChatConversationPage() {
         </div>
       </header>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
-        <div className="max-w-5xl mx-auto px-4 py-6">
-          {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <p className="text-gray-600">Nenhuma mensagem ainda</p>
-              <p className="text-sm text-gray-500 mt-1">Envie a primeira mensagem para iniciar a conversa</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => {
-                const isMyMessage = message.senderId === session?.user?.id
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-md ${isMyMessage ? 'order-2' : 'order-1'}`}>
-                      <div
-                        className={`rounded-2xl px-4 py-3 ${
-                          isMyMessage
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-gray-900 border border-gray-200'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                      </div>
-                      <div className={`flex items-center gap-2 mt-1 px-2 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
-                        <span className="text-xs text-gray-500">
-                          {new Date(message.createdAt).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+      {/* WebSocket Chat or Fallback */}
+      {useWebSocket && otherUser ? (
+        <div className="flex-1 flex flex-col">
+          <WebSocketChat
+            conversationId={conversationId}
+            currentUserId={session?.user?.id || ''}
+            otherUser={otherUser}
+          />
         </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="bg-white border-t border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg mb-3 text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSendMessage} className="flex items-end gap-3">
-            <div className="flex-1">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage(e)
-                  }
-                }}
-                placeholder="Digite sua mensagem..."
-                rows={1}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                style={{ minHeight: '48px', maxHeight: '120px' }}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Pressione Enter para enviar, Shift+Enter para nova linha
-              </p>
-            </div>
-            <button
-              type="submit"
-              disabled={!newMessage.trim() || sending}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {sending ? (
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+      ) : (
+        <>
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="max-w-5xl mx-auto px-4 py-6">
+              {messages.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600">Nenhuma mensagem ainda</p>
+                  <p className="text-sm text-gray-500 mt-1">Envie a primeira mensagem para iniciar a conversa</p>
+                </div>
               ) : (
-                'Enviar'
+                <div className="space-y-4">
+                  {messages.map((message) => {
+                    const isMyMessage = message.senderId === session?.user?.id
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-md ${isMyMessage ? 'order-2' : 'order-1'}`}>
+                          <div
+                            className={`rounded-2xl px-4 py-3 ${
+                              isMyMessage
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white text-gray-900 border border-gray-200'
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                          </div>
+                          <div className={`flex items-center gap-2 mt-1 px-2 ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
+                            <span className="text-xs text-gray-500">
+                              {new Date(message.createdAt).toLocaleTimeString('pt-BR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
               )}
-            </button>
-          </form>
+            </div>
+          </div>
+
+          {/* Message Input */}
+          <div className="border-t border-gray-200 bg-white">
+            <div className="max-w-5xl mx-auto px-4 py-4">
+              <form onSubmit={handleSendMessage} className="flex items-end gap-4">
+                <div className="flex-1">
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Digite sua mensagem..."
+                    rows={1}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSendMessage(e)
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || sending}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {sending ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </>)
+      }
+
+      {/* Toggle WebSocket */}
+      <div className="border-t border-gray-200 bg-white px-4 py-2">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={useWebSocket}
+              onChange={(e) => setUseWebSocket(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+            <span>Chat em tempo real (WebSocket)</span>
+          </label>
+          {useWebSocket && (
+            <span className="text-xs text-green-600">● Conectado</span>
+          )}
         </div>
       </div>
     </div>

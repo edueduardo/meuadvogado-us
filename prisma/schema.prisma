@@ -81,6 +81,10 @@ model User {
   // Auth
   emailVerified DateTime?
   
+  // Real-time status
+  isOnline      Boolean   @default(false)
+  lastSeen      DateTime?
+  
   // COMPLIANCE (GDPR/CCPA)
   consentGiven       Boolean   @default(false)
   consentDate        DateTime?
