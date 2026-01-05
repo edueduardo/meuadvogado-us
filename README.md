@@ -14,6 +14,10 @@ Plataforma completa de conexão entre advogados brasileiros e clientes nos Estad
 4. Importe o repositório
 5. Clique em "Deploy"
 
+**⚠️ IMPORTANTE:** Configure as variáveis de ambiente após o deploy:
+- Veja: [`VERCEL-SETUP.md`](./VERCEL-SETUP.md)
+- Execute: `node scripts/check-env.js`
+
 **Pronto!** Seu site estará no ar em ~1 minuto.
 
 ### Opção 2: Local
