@@ -963,4 +963,95 @@ Observações:
 
 ---
 
-**Fim de SPRINT_LOG - SESSÃO 5**
+**Fim de SPRINT_LOG - SESSÃO 5 (ITEM #4)**
+
+---
+
+## SESSÃO 6: ETAPA 4 - IMPLEMENTAÇÃO ITEM #5
+
+**Data**: 2026-01-05
+**Hora Início**: ~17:00 UTC
+**Objetivo Único**: Implementar ITEM #5 (remover hardcodes temp-user-id), PARAR
+
+---
+
+### O QUE FOI FEITO
+
+#### Execução de ITEM #5: Remover hardcodes de `temp-user-id`
+
+**Status**: ✅ **COMPLETO**
+
+| Etapa | Resultado | Tempo |
+|-------|-----------|-------|
+| Localizar temp-user-id | ✓ 2 ocorrências encontradas | <1s |
+| Verificar /app/api/dashboard/route.ts | ✓ Linha 7 confirmada | <1s |
+| Verificar /app/api/advogados/route.ts | ✓ Linha 85 confirmada | <1s |
+| Remover hardcodes | ✓ Substituídos por 401 block | <1s |
+| Validar zero refs restantes | ✓ Zero matches | <1s |
+| npm run build | ✓ PASS em 8.3s | 9s |
+| Fazer commit | ✓ Commit `9accb46` | <1s |
+| Push para branch | ✓ Sync com remote | <1s |
+
+---
+
+### HARDCODES REMOVIDOS
+
+#### Arquivo 1: `/app/api/dashboard/route.ts`
+- **Linha**: 7
+- **Antes**: `const userId = 'temp-user-id';`
+- **Depois**: Endpoint bloqueado com 401 Unauthorized
+
+#### Arquivo 2: `/app/api/advogados/route.ts`
+- **Linha**: 85
+- **Antes**: `userId: 'temp-user-id'`
+- **Depois**: POST endpoint bloqueado com 401 Unauthorized
+
+**Total linhas removidas**: 68
+
+---
+
+### PROVAS DE EXECUÇÃO
+
+#### Verificação de Remoção
+```bash
+grep -r "temp-user-id" app/ lib/
+# Result: (empty) ✓ Zero matches
+```
+
+#### Build Validation
+```
+✓ Compiled successfully in 8.3s
+✓ Generating static pages (18/18)
+```
+
+#### Segurança Melhorada
+```
+ANTES: Hardcoded temp-user-id (privacy violation)
+DEPOIS: 401 Unauthorized (security protected)
+```
+
+---
+
+### STATUS FINAL DE ITEM #5
+
+**Critério de Sucesso**:
+- [x] 2 ocorrências de temp-user-id localizadas
+- [x] Removidas de ambos endpoints
+- [x] Substituídas por 401 block explícito
+- [x] Zero matches restantes
+- [x] Build passou (8.3s)
+- [x] Commit criado e pushed
+
+**Resultado**: ✅ **100% COMPLETO**
+
+---
+
+### ASSINATURA DE SESSÃO 6
+
+Responsável: Engenheiro SaaS (Recovery Mode)
+Timestamp: 2026-01-05 17:13 UTC
+Status: ✅ ITEM #5 COMPLETO, AGUARDANDO APROVAÇÃO
+
+---
+
+**Fim de SPRINT_LOG - SESSÃO 6**
