@@ -40,10 +40,6 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      // TODO: Implementar API real
-      // const response = await fetch(`/api/analytics?period=${period}`);
-      // const analyticsData = await response.json();
-      
       // Dados mockados
       const mockData: AnalyticsData = {
         views: {

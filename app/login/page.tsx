@@ -22,7 +22,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implementar autenticação
       console.log('Login:', formData);
       alert('Funcionalidade de login será implementada com NextAuth');
     } catch (error) {

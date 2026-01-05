@@ -5,7 +5,6 @@ import { PLANS } from '@/lib/plans';
 export async function POST(req: NextRequest) {
   try {
     // BLOCKED: Autenticação não implementada
-    // TODO: Implementar autenticação real e extrair userId/email do contexto de usuário logado
     return NextResponse.json(
       { error: 'Endpoint bloqueado: autenticação não está implementada. Implemente o sistema de autenticação para ativar este endpoint.' },
       { status: 401 }
