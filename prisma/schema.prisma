@@ -76,6 +76,7 @@ model User {
   lawyer        Lawyer?
   client        Client?
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   auditLogs     AuditLog[]
   
   // Auth
@@ -678,6 +679,25 @@ model PasswordResetToken {
   used      Boolean  @default(false)
   usedAt    DateTime?
   attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// EMAIL VERIFICATION TOKENS
+// =============================================================================
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
   createdAt DateTime @default(now())
   
   @@index([token])

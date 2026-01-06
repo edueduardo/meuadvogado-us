@@ -28,6 +28,8 @@ export default function CadastroPage() {
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
   const [userType, setUserType] = useState<UserType>('CLIENT')
+  const [showEmailVerification, setShowEmailVerification] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -111,12 +113,89 @@ export default function CadastroPage() {
         throw new Error(data.error || 'Erro ao criar conta')
       }
 
+      // Se requer verificação de email, mostrar mensagem
+      if (data.requiresEmailVerification) {
+        setUserEmail(formData.email)
+        setShowEmailVerification(true)
+        return
+      }
+
       router.push('/login?registered=true')
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta. Tente novamente.')
     } finally {
       setLoading(false)
     }
+  }
+
+  // Mostrar tela de verificação de email
+  if (showEmailVerification) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <Link href="/" className="text-3xl font-bold text-blue-600">
+              Meu Advogado
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">✉️ Confirme seu email</h2>
+            
+            <div className="space-y-4 mb-6">
+              <p className="text-gray-600">
+                Enviamos um link de verificação para:
+              </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-blue-600">{userEmail}</p>
+              </div>
+              <p className="text-gray-600">
+                Clique no link no seu email para ativar sua conta.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>Importante:</strong> Verifique também sua pasta de spam ou lixo eletrônico.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Não recebeu o email?
+              </p>
+              <Link 
+                href="/resend-verification"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
+              >
+                Reenviar Email de Verificação
+              </Link>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Email incorreto?{' '}
+                <button 
+                  onClick={() => {
+                    setShowEmailVerification(false)
+                    setError('')
+                  }}
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Voltar e corrigir
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
