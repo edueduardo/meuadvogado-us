@@ -93,7 +93,11 @@ model User {
   dataRetentionUntil DateTime?
   deletionRequested  Boolean   @default(false)
   deletionRequestedAt DateTime?
-  
+
+  // Stripe Payments
+  stripeCustomerId   String?   // For charge customer
+  stripeConnectId    String?   // For Stripe Connect (lawyer payouts)
+
   // Timestamps
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -562,7 +566,7 @@ model Milestone {
   currency        String    @default("usd")
 
   // Status
-  status          String    @default("pending") // pending, funded, completed, released, refunded
+  status          String    @default("pending") // pending, funded, completed, released, disputed, refunded
 
   // Timestamps
   dueDate         DateTime?
