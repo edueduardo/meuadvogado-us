@@ -78,6 +78,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   auditLogs     AuditLog[]
+  notifications Notification[]
   
   // Auth
   emailVerified DateTime?
@@ -809,6 +810,43 @@ model AuditLog {
   @@index([severity])
   @@index([timestamp])
   @@index([timestamp, severity])
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+
+  // Recipient
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  // Content
+  type      String   // new_lead, lead_accepted, new_message, payment_received, etc.
+  title     String
+  body      String   @db.Text
+  data      Json?    // Custom data for action
+  actionUrl String?  // URL to navigate to when clicked
+
+  // Status
+  status    String   @default("pending") // pending, sent, failed, delivered
+  readAt    DateTime?
+  sentAt    DateTime?
+
+  // Priority
+  priority  String   @default("normal") // low, normal, high
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([readAt])
+  @@index([createdAt])
 }
 
 // =============================================================================
