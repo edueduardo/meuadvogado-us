@@ -1,4 +1,3 @@
-// app/api/auth/verify/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isTokenValid } from "@/lib/auth-helpers";

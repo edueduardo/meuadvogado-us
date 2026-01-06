@@ -28,6 +28,8 @@ export default function CadastroPage() {
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
   const [userType, setUserType] = useState<UserType>('CLIENT')
+  const [showEmailVerificationMessage, setShowEmailVerificationMessage] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -111,12 +113,73 @@ export default function CadastroPage() {
         throw new Error(data.error || 'Erro ao criar conta')
       }
 
-      router.push('/login?registered=true')
+      // Verificar se requer verificação de email
+      if (data.requiresEmailVerification) {
+        setRegisteredEmail(formData.email)
+        setShowEmailVerificationMessage(true)
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          phone: '',
+          city: '',
+          state: '',
+          userType: 'CLIENT',
+          practiceAreas: [],
+          languages: ['Português'],
+          bio: '',
+        })
+      } else {
+        router.push('/login?registered=true')
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao criar conta. Tente novamente.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (showEmailVerificationMessage) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <Link href="/" className="text-3xl font-bold text-blue-600">
+              Meu Advogado
+            </Link>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-8 border-t-4 border-green-500">
+            <div className="text-center">
+              <div className="text-5xl mb-4">✉️</div>
+              <h1 className="text-2xl font-bold text-gray-900">Confirme seu email</h1>
+
+              <p className="text-gray-600 mt-4">Enviamos um link de verificação para:</p>
+              <p className="text-lg font-semibold text-gray-900 mt-2 break-words">{registeredEmail}</p>
+
+              <p className="text-gray-600 mt-6">Clique no link no seu email para ativar sua conta.</p>
+
+              <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Não recebeu? Verifique a pasta de spam ou{' '}
+                  <Link href="/auth/resend-verification" className="text-blue-600 hover:underline font-medium">
+                    solicite um novo link
+                  </Link>
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowEmailVerificationMessage(false)}
+                className="mt-6 text-blue-600 hover:underline font-medium"
+              >
+                ← Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
