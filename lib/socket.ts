@@ -4,7 +4,7 @@
 import { Server as NetServer } from 'http'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Server as ServerIO } from 'socket.io'
-// import { getCurrentUser } from './auth'
+import { verifyToken } from './auth'
 import { prisma } from './prisma'
 
 export const config = {
@@ -51,8 +51,7 @@ export function initializeSocket(server: NetServer) {
     socket.on('authenticate', async (token: string) => {
       try {
         // Verify JWT token and get user
-        // const user = await getCurrentUser(token)
-        const user = { id: 'temp', role: 'USER', name: 'Temp User' } // TODO: Implement getCurrentUser
+        const user = await verifyToken(token)
         if (!user) {
           socket.emit('auth_error', 'Invalid token')
           socket.disconnect()
@@ -340,35 +339,40 @@ async function getConversationMessages(conversationId: string) {
   try {
     const messages = await prisma.message.findMany({
       where: { conversationId },
-      include: {
-        sender: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-                role: true,
-              },
-            },
-          },
-        },
-      },
       orderBy: { createdAt: 'asc' },
       take: 50, // Limit to last 50 messages
     })
 
-    return messages.map((msg: any) => ({
-      id: msg.id,
-      content: msg.content,
-      type: msg.type,
-      sender: {
-        id: msg.senderId,
-        name: msg.sender.user.name,
-        role: msg.sender.user.role,
+    // Get sender info for each message
+    const senderIds = [...new Set(messages.map((m: any) => m.senderId))]
+    const senders = await prisma.user.findMany({
+      where: { id: { in: senderIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
       },
-      createdAt: msg.createdAt,
-      readAt: msg.readAt,
-    }))
+    })
+
+    const senderMap = new Map(senders.map((s: any) => [s.id, s]))
+
+    return messages.map((msg: any) => {
+      const sender = senderMap.get(msg.senderId) as any
+      return {
+        id: msg.id,
+        content: msg.content,
+        type: msg.type || 'text',
+        sender: sender ? {
+          id: sender.id,
+          name: sender.name,
+          role: sender.role,
+        } : null,
+        read: msg.read,
+        readAt: msg.readAt,
+        createdAt: msg.createdAt,
+      }
+    })
   } catch (error) {
     console.error('Error getting conversation messages:', error)
     return []
@@ -389,18 +393,6 @@ async function createMessage(data: {
         content: data.content,
         type: data.type,
       },
-      include: {
-        sender: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                role: true,
-              },
-            },
-          },
-        },
-      },
     })
   } catch (error) {
     console.error('Error creating message:', error)
@@ -417,26 +409,37 @@ async function notifyOfflineUsers(
     // Get conversation participants
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },
-      include: {
-        client: {
-          include: { user: true },
-        },
-        lawyer: {
-          include: { user: true },
-        },
+      select: {
+        clientId: true,
+        lawyerId: true,
       },
     })
 
     if (!conversation) return
 
-    const participants = [conversation.client, conversation.lawyer]
+    const participantIds = [conversation.clientId, conversation.lawyerId]
       .filter(Boolean)
-      .filter(p => p.user.id !== senderId && !p.user.isOnline)
+      .filter(id => id !== senderId)
+
+    if (participantIds.length === 0) return
+
+    // Get user info for offline check
+    const participants = await prisma.user.findMany({
+      where: {
+        id: { in: participantIds },
+        isOnline: false, // Only notify offline users
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    })
 
     // Send push notifications (implement with Resend/FCM)
     for (const participant of participants) {
-      // TODO: Implement push notification
-      console.log(`Would send notification to ${participant.user.name}`)
+      // TODO: Implement push notification via email
+      console.log(`Would send notification to ${participant.name} (${participant.email})`)
     }
   } catch (error) {
     console.error('Error notifying offline users:', error)
@@ -456,7 +459,10 @@ async function markMessagesAsRead(
         senderId: { not: userId }, // Only mark others' messages as read
         readAt: null,
       },
-      data: { readAt: new Date() },
+      data: {
+        read: true,
+        readAt: new Date(),
+      },
     })
   } catch (error) {
     console.error('Error marking messages as read:', error)

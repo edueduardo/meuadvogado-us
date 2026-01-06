@@ -409,15 +409,18 @@ model Message {
   id              String       @id @default(cuid())
   conversationId  String
   conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
+
   senderId        String
   content         String       @db.Text
+  type            String       @default("text") // text, image, file, etc.
   read            Boolean      @default(false)
-  
+  readAt          DateTime?    // Timestamp when message was read
+
   createdAt       DateTime     @default(now())
 
   @@index([conversationId, createdAt])
   @@index([read])
+  @@index([senderId])
 }
 
 // =============================================================================
@@ -702,24 +705,6 @@ model EmailVerificationToken {
   @@index([expiresAt])
 }
 
-// =============================================================================
-// EMAIL VERIFICATION TOKENS
-// =============================================================================
-
-model EmailVerificationToken {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
-  
-  @@index([token])
-  @@index([userId])
-  @@index([expiresAt])
-}
 
 // =============================================================================
 // AUDIT LOGS - COMPLIANCE E SEGURANÇA
