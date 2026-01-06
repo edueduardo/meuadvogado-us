@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { prisma } from './prisma'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 // Configurações
 const FROM_EMAIL = 'noreply@meuadvogado.com'
@@ -17,7 +17,7 @@ interface EmailOptions {
 
 export async function sendEmail({ to, subject, html }: EmailOptions) {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env.RESEND_API_KEY || !resend) {
       console.warn('RESEND_API_KEY not configured, skipping email')
       return { success: false, error: 'Email not configured' }
     }
