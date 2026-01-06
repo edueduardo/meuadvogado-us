@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendEmail } from "@/lib/email";
+import { generateSecureToken, getTokenExpirationDate } from "@/lib/auth-helpers";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -85,11 +87,53 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Gerar token de verificação de email
+    const verificationToken = generateSecureToken();
+    const tokenExpiresAt = getTokenExpirationDate(24); // 24 horas
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: tokenExpiresAt,
+      },
+    });
+
+    // Enviar email de verificação
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: "✅ Confirme seu email no MeuAdvogado",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a73e8;">Bem-vindo ao MeuAdvogado!</h2>
+          <p>Olá ${user.name},</p>
+          <p>Para completar seu cadastro, clique no botão abaixo para confirmar seu email:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationUrl}" style="background-color: #1a73e8; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Confirmar Email
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            Ou copie e cole este link no seu navegador:<br>
+            <code>${verificationUrl}</code>
+          </p>
+          <p style="color: #999; font-size: 12px;">
+            Este link expira em 24 horas.<br>
+            Se você não criou esta conta, ignore este email.
+          </p>
+        </div>
+      `,
+    });
+
     return NextResponse.json(
       {
         success: true,
-        message: "Cadastro realizado com sucesso!",
+        message: "Cadastro realizado com sucesso! Confirme seu email para continuar.",
         userId: user.id,
+        requiresEmailVerification: true,
       },
       { status: 201 }
     );

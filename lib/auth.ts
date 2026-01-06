@@ -41,6 +41,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email ou senha incorretos");
         }
 
+        // Verificar se o email foi verificado
+        if (!user.emailVerified) {
+          throw new Error("Por favor, verifique seu email antes de fazer login. Verifique sua caixa de entrada.");
+        }
+
         return {
           id: user.id,
           email: user.email,
