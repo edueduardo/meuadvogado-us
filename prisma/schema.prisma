@@ -703,6 +703,25 @@ model EmailVerificationToken {
 }
 
 // =============================================================================
+// EMAIL VERIFICATION TOKENS
+// =============================================================================
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =============================================================================
 // AUDIT LOGS - COMPLIANCE E SEGURANÇA
 // =============================================================================
 
