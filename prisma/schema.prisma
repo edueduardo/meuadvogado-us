@@ -165,7 +165,8 @@ model Lawyer {
   leadPurchases   LeadPurchase[]
   leadViews       LeadView[]
   leadMatches     LeadMatch[]
-  
+  milestones      Milestone[]
+
   // Sistema de créditos
   creditBalance    CreditBalance?
   creditTransactions CreditTransaction[]
@@ -267,7 +268,8 @@ model Client {
   reviews       Review[]
   conversations Conversation[]
   consultations Consultation[]
-  
+  milestones    Milestone[]
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -324,7 +326,8 @@ model Case {
   leadViews       LeadView[]
   leadMatches     LeadMatch[]
   creditUsages    CreditUsage[]
-  
+  milestones      Milestone[]
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -534,20 +537,69 @@ model Payment {
 }
 
 // =============================================================================
+// ESCROW MILESTONES (PAGAMENTOS ENTRE CLIENTES E ADVOGADOS)
+// =============================================================================
+
+model Milestone {
+  id              String    @id @default(cuid())
+
+  case            Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  caseId          String
+
+  client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId        String
+
+  lawyer          Lawyer    @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId        String
+
+  // Detalhes
+  title           String
+  description     String?   @db.Text
+  order           Int       // Ordem das milestones (1, 2, 3...)
+
+  // Valores (em centavos)
+  amount          Int       // Valor em cents
+  currency        String    @default("usd")
+
+  // Status
+  status          String    @default("pending") // pending, funded, completed, released, refunded
+
+  // Timestamps
+  dueDate         DateTime?
+  fundedAt        DateTime?
+  completedAt     DateTime?
+  releasedAt      DateTime?
+
+  // Stripe/Escrow
+  stripePaymentId String?   @unique
+  stripePaidAt    DateTime?
+  idempotencyKey  String?   @unique
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([caseId])
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// =============================================================================
 // PAY-PER-LEAD (MODELO HÍBRIDO)
 // =============================================================================
 
 model LeadPurchase {
   id         String   @id @default(cuid())
-  
+
   lawyer     Lawyer   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
   lawyerId   String
-  
+
   caseId     String
   price      Int
-  
+
   status     String   @default("pending")
-  
+
   createdAt  DateTime @default(now())
 
   @@index([lawyerId])
