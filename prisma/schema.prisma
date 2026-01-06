@@ -149,6 +149,13 @@ model Lawyer {
   verified        Boolean     @default(false)
   featured        Boolean     @default(false)
   active          Boolean     @default(true)
+
+  // Suspension status
+  suspendedAt     DateTime?
+  suspendedReason String?     // LICENSE_EXPIRED, DISCIPLINARY, REQUESTED
+
+  // Subscription link
+  subscriptionId  String?     @unique
   
   // Estatísticas
   viewCount       Int         @default(0)
@@ -195,27 +202,41 @@ model LawyerVerification {
   id              String             @id @default(cuid())
   lawyerId        String             @unique
   lawyer          Lawyer             @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  
+
   // Documentos
   barLicenseUrl   String?
   barNumber       String
-  barState        String
-  
+  barState        String?
+
+  // License expiry
+  licenseExpiresAt DateTime?
+  licenseStatus    String?            // ATIVO, INATIVO, SUSPENSO, VENCIDO
+
   // Status
   status          VerificationStatus @default(PENDING)
   verifiedAt      DateTime?
   verifiedBy      String?
-  
+
+  // Verification method
+  verificationMethod String?          // OAB_API, MANUAL_ADMIN, DOCUMENT_UPLOAD
+  verificationNotes String?           @db.Text
+
+  // Suspension
+  suspendedAt     DateTime?
+  suspendReason   String?            // LICENSE_EXPIRED, DISCIPLINARY, REQUESTED
+
   // Checks automáticos
   barNumberChecked Boolean           @default(false)
   licenseActive    Boolean           @default(false)
-  
+
   rejectedReason   String?           @db.Text
-  
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
   @@index([status])
+  @@index([licenseExpiresAt])
+  @@index([suspendedAt])
 }
 
 // =============================================================================
