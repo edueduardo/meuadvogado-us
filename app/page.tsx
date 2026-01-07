@@ -84,11 +84,11 @@ const testimonials = [
 ]
 
 const urgencyMessages = [
-  "🔥 47 pessoas consultaram advogados nas últimas 2 horas",
+  "🔥 47 pessoas pediram ajuda nas últimas 2 horas - e você?",
   "⚡ 12 casos novos abertos hoje em Miami",
   "✅ Maria S. acabou de contratar um advogado de imigração",
   "🎯 3 advogados disponíveis agora em seu estado",
-  "⏰ Seu caso pode prescrever - não perca o prazo!",
+  "⏰ Tá esperando o quê? Seu caso pode prescrever!",
   "💰 João conseguiu $45.000 de indenização ontem"
 ]
 
@@ -280,8 +280,8 @@ export default function Home() {
 
             {/* Subheadline */}
             <p className="text-lg md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              IA conecta você com o <strong>advogado perfeito</strong> que fala português, 
-              entende sua cultura e <strong>resolve seu caso</strong>.
+              Nossa IA te conecta com o <strong>advogado certo</strong> que fala português, 
+              entende a sua situação e <strong>resolve de verdade</strong>.
             </p>
 
             {/* Guarantee Badges */}
@@ -425,7 +425,7 @@ export default function Home() {
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
               <div className="text-5xl mb-4">📝</div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Conte seu Problema</h3>
-              <p className="text-gray-600">Descreva sua situação em 30 segundos. Nossa IA entende e analisa.</p>
+              <p className="text-gray-600">Conta pra gente o que tá acontecendo. Nossa IA entende na hora.</p>
             </div>
             <div className="relative text-center p-8 bg-gradient-to-br from-green-50 to-white rounded-2xl border-2 border-green-100 hover:border-green-300 transition-all hover:shadow-xl">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
@@ -437,7 +437,7 @@ export default function Home() {
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
               <div className="text-5xl mb-4">💬</div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Fale Direto pelo WhatsApp</h3>
-              <p className="text-gray-600">Consulta gratuita com advogado brasileiro em até 24 horas.</p>
+              <p className="text-gray-600">Bate um papo grátis com advogado brasileiro em até 24h.</p>
             </div>
           </div>
 
@@ -635,6 +635,24 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      {/* STICKY MOBILE CTA BAR - Thumb Zone */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 flex gap-2 md:hidden safe-area-bottom">
+        <Link 
+          href="/caso"
+          className="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-center text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
+          📝 Contar Caso
+        </Link>
+        <button 
+          onClick={openWhatsApp}
+          className="flex-1 bg-[#25D366] text-white py-3.5 rounded-xl font-bold text-center text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        >
+          💬 WhatsApp
+        </button>
+      </div>
+
+      {/* Spacer for sticky bar on mobile */}
+      <div className="h-20 md:hidden"></div>
     </div>
   )
 }
