@@ -12,7 +12,7 @@ export const isStripeConfigured = () => !!STRIPE_SECRET_KEY;
 
 // Cliente Stripe (só cria se configurado)
 const stripe = STRIPE_SECRET_KEY 
-  ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+  ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' as any })
   : null;
 
 // Planos disponíveis

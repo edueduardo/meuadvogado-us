@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const formattedLawyers = lawyers.map((lawyer: any) => ({
       id: lawyer.id,
       name: lawyer.user.name || 'Advogado',
-      practiceAreas: lawyer.practiceAreas.map(pa => pa.slug),
+      practiceAreas: lawyer.practiceAreas.map((pa: any) => pa.slug),
       states: lawyer.states || [],
       rating: lawyer.rating || 0,
       reviewCount: lawyer.reviewCount || 0,
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
             rating: lawyer.rating,
             reviewCount: lawyer.reviewCount,
             verified: lawyer.verified,
-            practiceAreas: lawyer.practiceAreas.map(pa => pa.name),
+            practiceAreas: lawyer.practiceAreas.map((pa: any) => pa.name),
           } : null,
         }
       })
