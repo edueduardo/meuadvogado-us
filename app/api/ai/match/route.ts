@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Formatar para o serviço de matching
-    const formattedLawyers = lawyers.map(lawyer => ({
+    const formattedLawyers = lawyers.map((lawyer: any) => ({
       id: lawyer.id,
       name: lawyer.user.name || 'Advogado',
       practiceAreas: lawyer.practiceAreas.map(pa => pa.slug),
