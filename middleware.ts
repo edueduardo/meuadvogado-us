@@ -42,9 +42,22 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Proteção de rotas autenticadas
-  const protectedPaths = ['/dashboard', '/cliente', '/advogado', '/chat']
-  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
+  // Proteção de rotas autenticadas (apenas dashboards e áreas internas)
+  const protectedPaths = [
+    '/dashboard',
+    '/cliente/dashboard',
+    '/cliente/casos',
+    '/cliente/mensagens',
+    '/advogado/dashboard',
+    '/advogado/leads',
+    '/advogado/casos',
+    '/chat'
+  ]
+  
+  // Verifica se é uma rota protegida (match exato ou subpasta)
+  const isProtectedPath = protectedPaths.some(path => 
+    pathname === path || pathname.startsWith(path + '/')
+  )
 
   if (isProtectedPath) {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
@@ -63,8 +76,12 @@ export const config = {
   matcher: [
     '/api/:path*',
     '/dashboard/:path*',
-    '/cliente/:path*',
-    '/advogado/:path*',
+    '/cliente/dashboard/:path*',
+    '/cliente/casos/:path*',
+    '/cliente/mensagens/:path*',
+    '/advogado/dashboard/:path*',
+    '/advogado/leads/:path*',
+    '/advogado/casos/:path*',
     '/chat/:path*',
   ],
 }
