@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
-import Header from './components/Header'
+import ConditionalHeader from './components/ConditionalHeader'
 import ToastProvider from './components/ToastProvider'
 import SocketInitializer from '@/components/SocketInitializer'
 
@@ -83,7 +83,7 @@ export default function RootLayout({
         <Providers>
           <ToastProvider />
           <SocketInitializer />
-          <Header />
+          <ConditionalHeader />
           {children}
         </Providers>
       </body>
