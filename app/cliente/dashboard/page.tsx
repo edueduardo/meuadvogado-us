@@ -93,6 +93,9 @@ export default function ClienteDashboard() {
               <Link href="/cliente/dashboard" className="text-blue-600 font-medium">
                 Dashboard
               </Link>
+              <Link href="/cliente/guia" className="text-gray-600 hover:text-blue-600 transition flex items-center gap-1">
+                <span>📘</span> Guia
+              </Link>
               <Link href="/chat" className="text-gray-600 hover:text-blue-600 transition">
                 Mensagens
               </Link>
@@ -171,93 +174,144 @@ export default function ClienteDashboard() {
           </div>
         </div>
 
-        {/* Cases List */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Seus Casos</h2>
-              <Link
-                href="/caso"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium shadow-lg"
-              >
-                + Novo Caso
-              </Link>
+        {/* Main Content & Sidebar */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main Content - Cases */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">Seus Casos</h2>
+                  <Link
+                    href="/caso"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium shadow-lg"
+                  >
+                    + Novo Caso
+                  </Link>
+                </div>
+              </div>
+
+              {cases.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum caso ainda</h3>
+                  <p className="text-gray-600 mb-6">Comece criando seu primeiro caso jurídico</p>
+                  <Link
+                    href="/caso"
+                    className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Criar Primeiro Caso
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {cases.map((caso) => (
+                    <div key={caso.id} className="p-6 hover:bg-gray-50 transition">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {caso.title || 'Caso sem título'}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(caso.status)}`}>
+                              {getStatusLabel(caso.status)}
+                            </span>
+                            {caso.analysis?.urgency === 'HIGH' && (
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                🔥 Urgente
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-600 mb-3">
+                            {caso.practiceArea.name}
+                          </p>
+                          {caso.matchedLawyer && (
+                            <div className="flex items-center gap-2 text-sm text-green-600 mb-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span>Conectado com {caso.matchedLawyer.user.name}</span>
+                            </div>
+                          )}
+                          {caso.analysis?.successProbability && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <span>Probabilidade de sucesso:</span>
+                              <div className="flex-1 max-w-xs bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-green-500 h-2 rounded-full"
+                                  style={{ width: `${caso.analysis.successProbability}%` }}
+                                ></div>
+                              </div>
+                              <span className="font-medium">{caso.analysis.successProbability}%</span>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-400 mt-2">
+                            Criado em {new Date(caso.createdAt).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/cliente/casos/${caso.id}`}
+                          className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                        >
+                          Ver Detalhes
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {cases.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum caso ainda</h3>
-              <p className="text-gray-600 mb-6">Comece criando seu primeiro caso jurídico</p>
-              <Link
-                href="/caso"
-                className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
-              >
-                Criar Primeiro Caso
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {cases.map((caso) => (
-                <div key={caso.id} className="p-6 hover:bg-gray-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {caso.title || 'Caso sem título'}
-                        </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(caso.status)}`}>
-                          {getStatusLabel(caso.status)}
-                        </span>
-                        {caso.analysis?.urgency === 'HIGH' && (
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            🔥 Urgente
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-3">
-                        {caso.practiceArea.name}
-                      </p>
-                      {caso.matchedLawyer && (
-                        <div className="flex items-center gap-2 text-sm text-green-600 mb-2">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <span>Conectado com {caso.matchedLawyer.user.name}</span>
-                        </div>
-                      )}
-                      {caso.analysis?.successProbability && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span>Probabilidade de sucesso:</span>
-                          <div className="flex-1 max-w-xs bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${caso.analysis.successProbability}%` }}
-                            ></div>
-                          </div>
-                          <span className="font-medium">{caso.analysis.successProbability}%</span>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-400 mt-2">
-                        Criado em {new Date(caso.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <Link
-                      href={`/cliente/casos/${caso.id}`}
-                      className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-                    >
-                      Ver Detalhes
-                    </Link>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Guia Promo */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 overflow-hidden relative group cursor-pointer hover:shadow-2xl transition border-2 border-transparent hover:border-blue-200">
+              <Link href="/cliente/guia">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition">
+                  <svg className="w-24 h-24 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">📘 Guia do Imigrante</h3>
+                <p className="text-sm text-gray-600 mb-4 pr-8">
+                  Entenda seus direitos e como funciona a justiça americana. Sem "juridiquês".
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="text-blue-500">▶️</span> Você não está sozinho
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="text-blue-500">▶️</span> O sigilo é sagrado
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="text-blue-500">▶️</span> Como evitar golpes
                   </div>
                 </div>
-              ))}
+                <span className="text-blue-600 font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                  Assistir Vídeos →
+                </span>
+              </Link>
             </div>
-          )}
+
+            {/* Suporte Rápido */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl p-6 text-white">
+              <h3 className="text-lg font-bold mb-2">Precisa de Ajuda?</h3>
+              <p className="text-sm text-blue-100 mb-4">
+                Nossa equipe de suporte está pronta para te ajudar com qualquer dúvida sobre a plataforma.
+              </p>
+              <a 
+                href="mailto:suporte@meuadvogado.us"
+                className="block text-center bg-white/20 hover:bg-white/30 backdrop-blur-sm py-2 rounded-lg transition font-medium text-sm"
+              >
+                Falar com Suporte
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
