@@ -6,15 +6,18 @@ import { redisService } from '@/lib/redis/upstash-redis';
 import { emailService } from '@/lib/email/resend-service';
 import { prisma } from '@/lib/prisma';
 
-// Configuração do Redis para Bull
-const redisConfig = {
+// Verificar se Redis está configurado
+const REDIS_CONFIGURED = !!(process.env.REDIS_HOST || process.env.REDIS_URL);
+
+// Configuração do Redis para Bull (só usa se configurado)
+const redisConfig = REDIS_CONFIGURED ? {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD,
   maxRetriesPerRequest: 3,
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
-};
+} : null;
 
 // Tipos de Jobs
 export enum JobType {
@@ -64,6 +67,12 @@ const queues: Record<string, Queue> = {};
 
 // Inicializar filas
 export function initializeQueues() {
+  // Só inicializa se Redis estiver configurado
+  if (!REDIS_CONFIGURED || !redisConfig) {
+    console.log('⚠️ Redis não configurado - Background jobs desabilitados (usando fallback em memória)');
+    return;
+  }
+
   // Fila de Emails
   queues.email = new Bull(JobType.SEND_EMAIL, {
     redis: redisConfig,
@@ -388,6 +397,17 @@ async function logWebhookFailure(event: string, data: any, error: any) {
 export const backgroundJobs = {
   // Adicionar job de email
   async addEmailJob(data: EmailJobData, options?: { delay?: number; priority?: number }) {
+    if (!queues.email) {
+      // Fallback: executar diretamente sem fila
+      console.log('⚠️ Queue não disponível, executando email diretamente');
+      try {
+        await emailService.send({ to: data.to, subject: data.subject, html: data.html || '', text: data.text });
+        return { id: 'direct-' + Date.now() };
+      } catch (e) {
+        console.error('Email direto falhou:', e);
+        return null;
+      }
+    }
     return queues.email.add('send-email', data, {
       delay: options?.delay,
       priority: options?.priority || 0,
@@ -396,6 +416,10 @@ export const backgroundJobs = {
 
   // Adicionar job de webhook
   async addWebhookJob(event: string, data: any, options?: { delay?: number }) {
+    if (!queues.webhooks) {
+      console.log('⚠️ Queue webhooks não disponível');
+      return null;
+    }
     return queues.webhooks.add('process-webhook', { event, data }, {
       delay: options?.delay,
     });
@@ -403,6 +427,10 @@ export const backgroundJobs = {
 
   // Adicionar job de manutenção
   async addMaintenanceJob(type: CleanupJobData['type'], options?: { delay?: number }) {
+    if (!queues.maintenance) {
+      console.log('⚠️ Queue maintenance não disponível');
+      return null;
+    }
     return queues.maintenance.add('cleanup', { type }, {
       delay: options?.delay,
     });
@@ -410,6 +438,10 @@ export const backgroundJobs = {
 
   // Adicionar job de relatório
   async addReportJob(data: ReportJobData, options?: { delay?: number }) {
+    if (!queues.reports) {
+      console.log('⚠️ Queue reports não disponível');
+      return null;
+    }
     return queues.reports.add('generate-report', data, {
       delay: options?.delay,
     });
@@ -417,6 +449,10 @@ export const backgroundJobs = {
 
   // Adicionar job de notificação
   async addNotificationJob(data: NotificationJobData, options?: { delay?: number }) {
+    if (!queues.notifications) {
+      console.log('⚠️ Queue notifications não disponível');
+      return null;
+    }
     return queues.notifications.add('send-notifications', data, {
       delay: options?.delay,
     });
@@ -424,6 +460,11 @@ export const backgroundJobs = {
 
   // Agendar jobs recorrentes
   async scheduleRecurringJobs() {
+    if (!queues.maintenance || !queues.reports) {
+      console.log('⚠️ Queues não disponíveis - jobs recorrentes desabilitados');
+      return;
+    }
+    
     // Cleanup diário às 2AM
     queues.maintenance.add('daily-cleanup', { type: 'password-tokens' }, {
       repeat: { cron: '0 2 * * *' }, // Cron pattern
@@ -439,6 +480,10 @@ export const backgroundJobs = {
 
   // Status das filas
   async getQueueStatus() {
+    if (Object.keys(queues).length === 0) {
+      return { status: 'Redis não configurado - usando fallback em memória' };
+    }
+    
     const status: Record<string, any> = {};
     
     for (const [name, queue] of Object.entries(queues)) {
@@ -460,10 +505,11 @@ export const backgroundJobs = {
 
   // Limpar todas as filas
   async clearAllQueues() {
+    if (Object.keys(queues).length === 0) return;
+    
     for (const queue of Object.values(queues)) {
       await queue.clean(0, 'completed');
       await queue.clean(0, 'failed');
-      // waiting e active não são suportados em todas as versões
       try {
         await queue.clean(0, 'waiting' as any);
         await queue.clean(0, 'active' as any);
@@ -476,6 +522,8 @@ export const backgroundJobs = {
 
   // Fechar todas as filas
   async closeAllQueues() {
+    if (Object.keys(queues).length === 0) return;
+    
     for (const queue of Object.values(queues)) {
       await queue.close();
     }
