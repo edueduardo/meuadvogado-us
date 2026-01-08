@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import CaseTracker from '@/components/CaseTracker'
 
 interface Case {
   id: string
@@ -173,6 +174,17 @@ export default function ClienteDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Case Tracker - WOW Feature */}
+        {cases.length > 0 && (
+          <div className="mb-8">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Acompanhamento de Caso</h2>
+              <p className="text-gray-600 text-sm">Veja o progresso do seu caso em tempo real</p>
+            </div>
+            <CaseTracker caseId={cases[0]?.id || 'CASE-2024-001'} variant="full" />
+          </div>
+        )}
 
         {/* Main Content & Sidebar */}
         <div className="grid lg:grid-cols-3 gap-8">

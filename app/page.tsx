@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import LegalCopilot from '@/components/LegalCopilot'
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -171,6 +172,9 @@ export default function HomePage() {
           © 2026 Meu Advogado. Todos os direitos reservados.
         </p>
       </footer>
+
+      {/* Legal Copilot - 24/7 Assistant */}
+      <LegalCopilot />
     </div>
   )
 }
