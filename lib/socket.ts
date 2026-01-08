@@ -153,12 +153,12 @@ export function initializeSocket(server: NetServer) {
       })
     })
 
-    // Send message
+    // Send message with ACK for delivery confirmation
     socket.on('send_message', async (data: {
       conversationId: string
       content: string
       type?: 'text' | 'file' | 'image'
-    }) => {
+    }, callback?: (response: { success: boolean; messageId?: string }) => void) => {
       if (!socket.data.user) {
         socket.emit('error', 'Not authenticated')
         return
