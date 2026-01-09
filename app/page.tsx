@@ -167,13 +167,22 @@ export default function HomePage() {
         </div>
 
         {/* Features Status Badge */}
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col gap-3">
+          <Link
+            href="/all-features-active"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600/80 to-emerald-600/80 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg transition-all hover:shadow-lg hover:shadow-green-500/30 border border-green-400/30 text-center justify-center"
+          >
+            <span className="text-xl">🎉</span>
+            <span>Ver 12 Features Ativadas (Todas Funcionando!)</span>
+            <span>→</span>
+          </Link>
+
           <Link
             href="/features-status"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600/80 to-emerald-600/80 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg transition-all hover:shadow-lg hover:shadow-green-500/30 border border-green-400/30"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600/80 to-blue-700/80 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all hover:shadow-lg hover:shadow-blue-500/30 border border-blue-400/30 text-center justify-center"
           >
-            <span className="text-xl">✅</span>
-            <span>Ver Status das Features (8 Prontas + Aguardando 4 API Keys)</span>
+            <span className="text-xl">📋</span>
+            <span>Status Detalhado das Features</span>
             <span>→</span>
           </Link>
         </div>
