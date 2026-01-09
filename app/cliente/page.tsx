@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useCallback } from 'react'
+import HeyGenVideo from '@/components/HeyGenVideo'
 
 interface Stats {
   lawyers: {
@@ -83,6 +84,14 @@ const testimonials = [
   }
 ]
 
+// Video testimonials mapping
+const videoTestimonials = [
+  { id: 'cliente_depoimento_maria_santos', name: 'Maria Santos' },
+  { id: 'cliente_depoimento_joao_silva', name: 'João Silva' },
+  { id: 'cliente_depoimento_ana_oliveira', name: 'Ana Oliveira' },
+  { id: 'cliente_depoimento_carlos_mendes', name: 'Carlos Mendes' },
+]
+
 const urgencyMessages = [
   "🔥 47 pessoas pediram ajuda nas últimas 2 horas - e você?",
   "⚡ 12 casos novos abertos hoje em Miami",
@@ -130,6 +139,7 @@ export default function Home() {
   const [selectedState, setSelectedState] = useState('')
   const [estimatedCost, setEstimatedCost] = useState<{ min: number; max: number; contingency?: boolean }>({ min: 0, max: 0 })
   const [showNotification, setShowNotification] = useState(true)
+  const [showVideoTestimonials, setShowVideoTestimonials] = useState(true)
 
   useEffect(() => {
     fetchData()
@@ -471,29 +481,57 @@ export default function Home() {
           </div>
 
           <div className="max-w-4xl mx-auto mb-10">
-            <div className="bg-white rounded-2xl shadow-xl p-8 border-l-4 border-green-500 transition-all">
-              <div className="flex items-start gap-6">
-                <div className="hidden sm:flex w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                  {testimonials[currentTestimonial].photo}
+            {showVideoTestimonials ? (
+              <div className="bg-white rounded-2xl shadow-xl p-8 border-l-4 border-green-500 transition-all">
+                <div className="mb-6">
+                  <HeyGenVideo
+                    videoId={videoTestimonials[currentTestimonial].id}
+                    title={`Depoimento - ${testimonials[currentTestimonial].name}`}
+                    autoplay={false}
+                    muted={false}
+                    loop={false}
+                    className="rounded-xl"
+                    width="100%"
+                    height={400}
+                    abTestVariant="cliente_testimonial_video"
+                  />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (<span key={i} className="text-yellow-400 text-xl">★</span>))}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <p className="font-bold text-gray-900 text-lg">{testimonials[currentTestimonial].name}</p>
+                    <p className="text-sm text-gray-500">{testimonials[currentTestimonial].location}</p>
                   </div>
-                  <p className="text-lg text-gray-700 mb-4 italic">"{testimonials[currentTestimonial].text}"</p>
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                      <p className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</p>
-                      <p className="text-sm text-gray-500">{testimonials[currentTestimonial].location}</p>
+                  <div className="text-right">
+                    <span className="inline-block bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">✓ {testimonials[currentTestimonial].case}</span>
+                    <p className="text-sm text-green-600 font-bold mt-1">{testimonials[currentTestimonial].result}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-xl p-8 border-l-4 border-green-500 transition-all">
+                <div className="flex items-start gap-6">
+                  <div className="hidden sm:flex w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                    {testimonials[currentTestimonial].photo}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (<span key={i} className="text-yellow-400 text-xl">★</span>))}
                     </div>
-                    <div className="text-right">
-                      <span className="inline-block bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">✓ {testimonials[currentTestimonial].case}</span>
-                      <p className="text-sm text-green-600 font-bold mt-1">{testimonials[currentTestimonial].result}</p>
+                    <p className="text-lg text-gray-700 mb-4 italic">"{testimonials[currentTestimonial].text}"</p>
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div>
+                        <p className="font-bold text-gray-900">{testimonials[currentTestimonial].name}</p>
+                        <p className="text-sm text-gray-500">{testimonials[currentTestimonial].location}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-block bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium">✓ {testimonials[currentTestimonial].case}</span>
+                        <p className="text-sm text-green-600 font-bold mt-1">{testimonials[currentTestimonial].result}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="flex justify-center gap-2 mb-8">

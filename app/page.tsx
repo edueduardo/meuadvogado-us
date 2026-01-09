@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import LegalCopilot from '@/components/LegalCopilot'
+import HeyGenVideo from '@/components/HeyGenVideo'
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -56,6 +57,23 @@ export default function HomePage() {
         <p className={`text-xl md:text-2xl text-blue-100/80 text-center mb-12 max-w-2xl transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           A plataforma que resolve problemas jurídicos em português
         </p>
+
+        {/* Hero Video - Client Testimonial */}
+        {mounted && (
+          <div className={`w-full max-w-3xl mb-12 transition-all duration-700 delay-250 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <HeyGenVideo
+              videoId="homepage_hero_testimonial"
+              title="Cliente Real - Resultado Real"
+              autoplay={true}
+              muted={true}
+              loop={true}
+              className="rounded-2xl shadow-2xl shadow-blue-500/30"
+              width="100%"
+              height={400}
+              abTestVariant="homepage_hero_video"
+            />
+          </div>
+        )}
 
         {/* Choice Cards */}
         <div className={`grid md:grid-cols-2 gap-6 max-w-4xl w-full transition-all duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -148,6 +166,61 @@ export default function HomePage() {
             </div>
           </Link>
         </div>
+
+        {/* "Como Funciona" Section with Explainer Video */}
+        <section className={`mt-20 w-full max-w-5xl transition-all duration-700 delay-400 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 md:p-12 border border-white/10">
+            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-8">
+              Como Funciona? É Bem Simples
+            </h2>
+
+            {/* 3-Step Visual */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div className="text-center">
+                <div className="text-5xl mb-4">📝</div>
+                <h3 className="text-xl font-bold text-white mb-2">Passo 1</h3>
+                <p className="text-blue-100/70">Conte seu caso</p>
+              </div>
+              <div className="text-center">
+                <div className="text-5xl mb-4">🤖</div>
+                <h3 className="text-xl font-bold text-white mb-2">Passo 2</h3>
+                <p className="text-blue-100/70">IA encontra advogado</p>
+              </div>
+              <div className="text-center">
+                <div className="text-5xl mb-4">💬</div>
+                <h3 className="text-xl font-bold text-white mb-2">Passo 3</h3>
+                <p className="text-blue-100/70">Conversa via chat</p>
+              </div>
+            </div>
+
+            {/* Explainer Video */}
+            {mounted && (
+              <div className="mb-8">
+                <HeyGenVideo
+                  videoId="homepage_explainer_process"
+                  title="Como Funciona em 30 segundos"
+                  autoplay={false}
+                  muted={false}
+                  loop={false}
+                  className="rounded-2xl shadow-xl shadow-blue-500/20"
+                  width="100%"
+                  height={400}
+                  abTestVariant="homepage_explainer_video"
+                />
+              </div>
+            )}
+
+            {/* CTA */}
+            <div className="text-center">
+              <Link
+                href="/cliente"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all hover:shadow-lg hover:shadow-blue-500/50"
+              >
+                Começar Agora - É Grátis
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* CTA Links - Quiz & Guide */}
         <div className="mt-12 flex flex-col md:flex-row gap-6 justify-center flex-wrap">

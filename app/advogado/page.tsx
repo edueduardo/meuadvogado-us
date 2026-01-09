@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import HeyGenVideo from '@/components/HeyGenVideo'
 
 const lawyerTestimonials = [
   {
@@ -10,6 +11,7 @@ const lawyerTestimonials = [
     specialty: "Imigração",
     location: "Miami, FL",
     photo: "RA",
+    videoId: "advogado_depoimento_ricardo_almeida",
     text: "Em 3 meses na plataforma, recebi mais de 40 leads qualificados. Já fechei 12 casos. O ROI é absurdo!",
     metric: "+$85.000 em honorários"
   },
@@ -19,6 +21,7 @@ const lawyerTestimonials = [
     specialty: "Acidentes",
     location: "Newark, NJ",
     photo: "FC",
+    videoId: "advogado_depoimento_fernanda_costa",
     text: "Antes gastava $3.000/mês em Google Ads com resultados ruins. Aqui pago $199 e recebo leads que realmente fecham.",
     metric: "ROI de 1.200%"
   },
@@ -28,6 +31,7 @@ const lawyerTestimonials = [
     specialty: "Criminal",
     location: "Boston, MA",
     photo: "MS",
+    videoId: "advogado_depoimento_marcos_silva",
     text: "Os clientes já vêm pré-qualificados e sabendo que falo português. A conversão é muito maior.",
     metric: "8 casos/mês"
   },
@@ -89,6 +93,7 @@ const stats = [
 export default function AdvogadoPage() {
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
   const [mounted, setMounted] = useState(false)
+  const [showVideoTestimonials, setShowVideoTestimonials] = useState(true)
 
   useEffect(() => {
     setMounted(true)
@@ -215,6 +220,23 @@ export default function AdvogadoPage() {
             <p className="text-xl text-gray-600">Simples, transparente e sem surpresas</p>
           </div>
 
+          {/* Day in Life Video */}
+          {mounted && (
+            <div className="max-w-4xl mx-auto mb-12">
+              <HeyGenVideo
+                videoId="advogado_day_in_life"
+                title="Um Dia na Vida de um Advogado"
+                autoplay={true}
+                muted={true}
+                loop={true}
+                className="rounded-2xl shadow-2xl shadow-green-500/30"
+                width="100%"
+                height={500}
+                abTestVariant="advogado_day_in_life_video"
+              />
+            </div>
+          )}
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white rounded-2xl p-8 shadow-lg border-t-4 border-green-500">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl mb-4">1</div>
@@ -256,34 +278,63 @@ export default function AdvogadoPage() {
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200">
-              <div className="flex items-start gap-6">
-                <div className="hidden sm:flex w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                  {lawyerTestimonials[currentTestimonial].photo}
+            {showVideoTestimonials ? (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200">
+                <div className="mb-6">
+                  <HeyGenVideo
+                    videoId={lawyerTestimonials[currentTestimonial].videoId}
+                    title={`Depoimento - ${lawyerTestimonials[currentTestimonial].name}`}
+                    autoplay={false}
+                    muted={false}
+                    loop={false}
+                    className="rounded-xl"
+                    width="100%"
+                    height={400}
+                    abTestVariant="advogado_testimonial_video"
+                  />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="text-yellow-400 text-xl">★</span>
-                    ))}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <p className="font-bold text-gray-900 text-lg">{lawyerTestimonials[currentTestimonial].name}</p>
+                    <p className="text-sm text-gray-500">
+                      {lawyerTestimonials[currentTestimonial].specialty} • {lawyerTestimonials[currentTestimonial].location}
+                    </p>
                   </div>
-                  <p className="text-lg text-gray-700 mb-4 italic">
-                    "{lawyerTestimonials[currentTestimonial].text}"
-                  </p>
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                      <p className="font-bold text-gray-900">{lawyerTestimonials[currentTestimonial].name}</p>
-                      <p className="text-sm text-gray-500">
-                        {lawyerTestimonials[currentTestimonial].specialty} • {lawyerTestimonials[currentTestimonial].location}
-                      </p>
+                  <div className="bg-green-600 text-white px-4 py-2 rounded-full font-bold">
+                    {lawyerTestimonials[currentTestimonial].metric}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200">
+                <div className="flex items-start gap-6">
+                  <div className="hidden sm:flex w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                    {lawyerTestimonials[currentTestimonial].photo}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className="text-yellow-400 text-xl">★</span>
+                      ))}
                     </div>
-                    <div className="bg-green-600 text-white px-4 py-2 rounded-full font-bold">
-                      {lawyerTestimonials[currentTestimonial].metric}
+                    <p className="text-lg text-gray-700 mb-4 italic">
+                      "{lawyerTestimonials[currentTestimonial].text}"
+                    </p>
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div>
+                        <p className="font-bold text-gray-900">{lawyerTestimonials[currentTestimonial].name}</p>
+                        <p className="text-sm text-gray-500">
+                          {lawyerTestimonials[currentTestimonial].specialty} • {lawyerTestimonials[currentTestimonial].location}
+                        </p>
+                      </div>
+                      <div className="bg-green-600 text-white px-4 py-2 rounded-full font-bold">
+                        {lawyerTestimonials[currentTestimonial].metric}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-center gap-2 mt-6">
               {lawyerTestimonials.map((_, index) => (
@@ -360,8 +411,26 @@ export default function AdvogadoPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Calcule seu ROI
           </h2>
+
+          {/* ROI Explainer Video */}
+          {mounted && (
+            <div className="mb-8 max-w-2xl mx-auto">
+              <HeyGenVideo
+                videoId="advogado_roi_explainer"
+                title="Como Funciona seu ROI"
+                autoplay={false}
+                muted={false}
+                loop={false}
+                className="rounded-xl"
+                width="100%"
+                height={300}
+                abTestVariant="advogado_roi_explainer_video"
+              />
+            </div>
+          )}
+
           <p className="text-xl text-green-100 mb-8">
-            Se você fechar apenas 1 caso de imigração por mês ($3.000), 
+            Se você fechar apenas 1 caso de imigração por mês ($3.000),
             seu ROI é de <strong className="text-yellow-300">1.400%</strong> no plano Professional.
           </p>
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 max-w-md mx-auto">
