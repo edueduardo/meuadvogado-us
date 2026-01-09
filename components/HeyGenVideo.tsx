@@ -42,8 +42,8 @@ export default function HeyGenVideo({
 
   // Track video engagement with Mixpanel
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.mixpanel) {
-      window.mixpanel.track('video_impression', {
+    if (typeof window !== 'undefined' && (window as any).mixpanel) {
+      (window as any).mixpanel.track('video_impression', {
         video_id: videoId,
         video_title: title,
         variant: abTestVariant || 'control',
@@ -63,8 +63,8 @@ export default function HeyGenVideo({
     if (onVideoPlay) {
       onVideoPlay();
     }
-    if (typeof window !== 'undefined' && window.mixpanel) {
-      window.mixpanel.track('video_play', {
+    if (typeof window !== 'undefined' && (window as any).mixpanel) {
+      (window as any).mixpanel.track('video_play', {
         video_id: videoId,
         video_title: title,
         variant: abTestVariant || 'control',
@@ -75,8 +75,8 @@ export default function HeyGenVideo({
 
   const handleError = () => {
     setHasError(true);
-    if (typeof window !== 'undefined' && window.mixpanel) {
-      window.mixpanel.track('video_error', {
+    if (typeof window !== 'undefined' && (window as any).mixpanel) {
+      (window as any).mixpanel.track('video_error', {
         video_id: videoId,
         video_title: title,
         variant: abTestVariant || 'control',
