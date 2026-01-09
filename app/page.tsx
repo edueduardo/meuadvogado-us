@@ -166,6 +166,18 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Features Status Badge */}
+        <div className="mt-8">
+          <Link
+            href="/features-status"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600/80 to-emerald-600/80 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-lg transition-all hover:shadow-lg hover:shadow-green-500/30 border border-green-400/30"
+          >
+            <span className="text-xl">✅</span>
+            <span>Ver Status das Features (8 Prontas + Aguardando 4 API Keys)</span>
+            <span>→</span>
+          </Link>
+        </div>
+
         {/* Stats */}
         <div className={`mt-16 grid grid-cols-3 gap-8 text-center transition-all duration-700 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div>
