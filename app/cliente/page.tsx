@@ -449,6 +449,17 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Quiz CTA */}
+      <section className="py-12 bg-purple-50 border-t-4 border-purple-600">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">🔮 Quer Saber Sua Chance de Sucesso?</h2>
+          <p className="text-lg text-gray-600 mb-8">Faça um quiz rápido (2 minutos) e descubra a probabilidade de sucesso do seu caso</p>
+          <Link href="/quiz" className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
+            Fazer Quiz Agora<span className="text-xl">→</span>
+          </Link>
+        </div>
+      </section>
+
       {/* TESTIMONIALS */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">

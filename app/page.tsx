@@ -149,6 +149,23 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* CTA Links - Quiz & Guide */}
+        <div className="mt-12 flex flex-col md:flex-row gap-6 justify-center flex-wrap">
+          <Link
+            href="/quiz"
+            className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-all hover:shadow-lg hover:shadow-purple-500/50"
+          >
+            🔮 Qual minha chance de sucesso?
+          </Link>
+
+          <Link
+            href="/cliente/guia"
+            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all hover:shadow-lg hover:shadow-blue-500/50"
+          >
+            📘 Guia Completo para Clientes
+          </Link>
+        </div>
+
         {/* Stats */}
         <div className={`mt-16 grid grid-cols-3 gap-8 text-center transition-all duration-700 delay-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div>
