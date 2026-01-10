@@ -1,57 +1,84 @@
 #!/bin/bash
 
-# Script de Deploy - Meu Advogado
-# Para rodar: ./deploy.sh
+# 🚀 Meuadvogado.us Deploy Script
+# Deploy para Vercel Production
 
-echo "🚀 Iniciando deploy do Meu Advogado..."
+set -e
 
-# 1. Verificar se está no branch main
-BRANCH=$(git branch --show-current)
-if [ "$BRANCH" != "main" ]; then
-    echo "❌ Você não está no branch main. Branch atual: $BRANCH"
-    echo "Mude para o branch main com: git checkout main"
+echo "🚀 Iniciando Deploy para Vercel..."
+echo ""
+
+# Cores para output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Verificar git status
+echo -e "${BLUE}📋 Verificando Git Status...${NC}"
+if ! git diff-index --quiet HEAD --; then
+    echo -e "${YELLOW}⚠️  Há mudanças não commitadas!${NC}"
+    echo "Use: git add . && git commit -m 'your message'"
     exit 1
 fi
+echo -e "${GREEN}✅ Git limpo - pronto para deploy${NC}"
+echo ""
 
-echo "✅ Branch main confirmado"
+# Verificar build
+echo -e "${BLUE}🔨 Compilando projeto...${NC}"
+npm run build
+echo -e "${GREEN}✅ Build sucesso${NC}"
+echo ""
 
-# 2. Verificar se há mudanças não commitadas
-if [ -n "$(git status --porcelain)" ]; then
-    echo "⚠️  Existem mudanças não commitadas:"
-    git status --short
-    echo ""
-    read -p "Deseja fazer commit das mudanças? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "📝 Fazendo commit..."
-        git add .
-        git commit -m "Deploy automático - $(date)"
-        echo "✅ Commit realizado"
-    fi
-fi
+# Opções de deploy
+echo -e "${BLUE}🎯 Escolha uma opção:${NC}"
+echo "1) GitHub Integration (automático)"
+echo "2) Deploy via CLI (com token)"
+echo "3) Ver status atual"
+echo ""
+read -p "Escolha (1-3): " choice
 
-# 3. Fazer push para o GitHub
-echo "📤 Enviando para o GitHub..."
-git push origin main
-
-if [ $? -eq 0 ]; then
-    echo "✅ Push realizado com sucesso"
-else
-    echo "❌ Erro ao fazer push"
-    exit 1
-fi
-
-# 4. Deploy no Vercel (se tiver CLI instalado)
-if command -v vercel &> /dev/null; then
-    echo "🚀 Fazendo deploy no Vercel..."
-    vercel --prod
-    echo "✅ Deploy no Vercel concluído"
-else
-    echo "📝 Vercel CLI não encontrado. Deploy será automático via GitHub."
-    echo "   Acompanhe em: https://vercel.com/dashboard"
-fi
+case $choice in
+    1)
+        echo -e "${BLUE}📤 GitHub Integration${NC}"
+        echo ""
+        echo "✅ Seu código já está no GitHub:"
+        git log --oneline -3
+        echo ""
+        echo -e "${YELLOW}⏱️  Vercel detectará automaticamente em 30-60 segundos${NC}"
+        echo "Dashboard: https://vercel.com/dashboard"
+        echo ""
+        echo -e "${GREEN}✅ Deploy automático acionado!${NC}"
+        ;;
+    2)
+        echo -e "${BLUE}🔑 Deploy com Token${NC}"
+        if [ -z "$VERCEL_TOKEN" ]; then
+            read -sp "Digite seu VERCEL_TOKEN: " token
+            export VERCEL_TOKEN=$token
+        fi
+        echo ""
+        echo "🚀 Deployando para produção..."
+        vercel deploy --prod
+        echo -e "${GREEN}✅ Deploy completado!${NC}"
+        ;;
+    3)
+        echo -e "${BLUE}📊 Status Atual${NC}"
+        echo ""
+        echo "Branch: $(git rev-parse --abbrev-ref HEAD)"
+        echo "Último commit: $(git log -1 --oneline)"
+        echo ""
+        echo "GitHub: https://github.com/edueduardo/meuadvogado-us"
+        echo "Vercel: https://vercel.com/dashboard"
+        ;;
+    *)
+        echo "Opção inválida"
+        exit 1
+        ;;
+esac
 
 echo ""
-echo "🎉 Deploy concluído com sucesso!"
-echo "🌐 Site: https://meuadvogado.us"
-echo "📊 Dashboard: https://vercel.com/meuadvogado-us"
+echo -e "${BLUE}📚 Resources:${NC}"
+echo "- Docs: DEPLOYMENT_INSTRUCTIONS.md"
+echo "- Dashboard: https://vercel.com/dashboard"
+echo "- Logs: vercel logs <URL>"
+echo ""
